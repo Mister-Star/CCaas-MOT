@@ -249,7 +249,8 @@ std::vector<std::string> kServerIp, kCacheServerIp;
 std::vector<uint64_t> port; // ServerNum * PackageNum
 volatile uint64_t kServerNum = 1;
 uint64_t kPortNum = 1, kPackageNum = 1, kNotifyNum = 1, kBatchNum = 1, kNotifyThreadNum = 1, kPackThreadNum = 4, kSendThreadNum = 1, 
-    kListenThreadNum = 1, kUnseriThreadNum = 1, kUnpackThreadNum = 1, kMergeThreadNum = 1, kCommitThreadNum = 1, kRecordCommitThreadNum = 1, kSendMessageNum = 1, kReceiveMessageNum = 1, 
+    kListenThreadNum = 1, kUnseriThreadNum = 1, kUnpackThreadNum = 1, kMergeThreadNum = 1, kCommitThreadNum = 1, kRecordCommitThreadNum = 1, 
+    kSendMessageNum = 1, kReceiveMessageNum = 1, 
     kSleepTime = 1, local_ip_index = 0, kCacheMaxLength = 200000, kDelayEpochNum = 0, kServerTimeOut_us = 700000, kRaftTimeOut_us = 500000, kLimiteTxnNum = 20,
     kStartCheckStateNum = 1000000, kDelayTime = 0, kDelayRatio = 0, kRaftStopEpoch = 0, kRaftRestrtEpoch = 0, kRaftStopServerId = 1,
     kRaftLeaderId = 0, kRaftStartCheckEpoch = 100;
@@ -258,13 +259,19 @@ std::vector<uint64_t>send_ports;
 std::string kMasterIp, kPrivateIp;
 volatile bool is_stable_epoch_send = false, is_epoch_advanced_by_message = true, is_read_repeatable = true, is_breakdown = true, 
     is_snap_isolation = true, is_cache_server_available = true, is_fault_tolerance_enable = false, is_protobuf_gzip = false, 
-    is_total_pack = false, is_sync_exec = false, is_limite_txn = false, is_full_async_exec = false, is_raft_enable = false;
+    is_total_pack = false, is_sync_exec = false, is_limite_txn = false, is_full_async_exec = false, is_raft_enable = false, is_remote_cache_server_enable = false;
 
 void GenerateEpochThreads();
 void CkeckEpochThreadsI();
 void GetServerInfo();
 
+//ADDBY TAAS
+uint64_t kStorageUpdaterThreadNum = 10, kStorageReaderThreadNum = 10;
 
+
+
+void GenerateClientThreads();
+void GenerateStorageThreads();
 
 extern void auto_explain_init(void);
 extern int S3_init();
@@ -5055,7 +5062,12 @@ static void reaper(SIGNAL_ARGS)
             ereport(LOG,(errmsg("============================Reaper=================================")));
             GenerateEpochThreads();
             ereport(LOG,(errmsg("============================Reaper=================================")));
-            
+            //ADDBY TAAS
+            ereport(LOG,(errmsg("============================TAAS Reaper=================================")));
+            GenerateClientThreads();
+            ereport(LOG,(errmsg("============================TAAS Reaper=================================")));
+            GenerateStorageThreads();
+            ereport(LOG,(errmsg("============================TAAS Reaper=================================")));
 
 
             if (g_instance.pid_cxt.WalWriterAuxiliaryPID == 0)
@@ -9723,6 +9735,59 @@ static void SetAuxType()
             t_thrd.bootstrap_cxt.MyAuxProcType = EpochRecordCommitProcess;
             break;
 
+        //ADDBY TAAS
+        case CLIENT_SENDER:
+            t_thrd.bootstrap_cxt.MyAuxProcType = ClientSenderProcess;
+            break;
+        case CLIENT_LISTENER:
+            t_thrd.bootstrap_cxt.MyAuxProcType = ClientListenerProcess;
+            break;
+        case CLIENT_MANAGER:
+            t_thrd.bootstrap_cxt.MyAuxProcType = ClientManagerProcess;
+            break;
+        case CLIENT_WORKER1:
+            t_thrd.bootstrap_cxt.MyAuxProcType = ClientWorker1Process;
+            break;
+        case CLIENT_WORKER2:
+            t_thrd.bootstrap_cxt.MyAuxProcType = ClientWorker2Process;
+            break;
+        case CLIENT_WORKER3:
+            t_thrd.bootstrap_cxt.MyAuxProcType = ClientWorker3Process;
+            break;
+        case CLIENT_WORKER4:
+            t_thrd.bootstrap_cxt.MyAuxProcType = ClientWorker4Process;
+            break;
+
+        case STOREAGE_SENDER:
+            t_thrd.bootstrap_cxt.MyAuxProcType = StorageSenderProcess;
+            break;
+        case STOREAGE_LISTENER:
+            t_thrd.bootstrap_cxt.MyAuxProcType = StorageListenerProcess;
+            break;
+        case STOREAGE_MANAGER:
+            t_thrd.bootstrap_cxt.MyAuxProcType = StorageManagerProcess;
+            break;
+        case STOREAGE_MESSAGE_MANAGER:
+            t_thrd.bootstrap_cxt.MyAuxProcType = StorageMessageManagerProcess;
+            break;
+        case STOREAGE_UPDATER:
+            t_thrd.bootstrap_cxt.MyAuxProcType = StorageUpdaterProcess;
+            break;
+        case STOREAGE_READER:
+            t_thrd.bootstrap_cxt.MyAuxProcType = StorageReaderProcess;
+            break;
+        case STOREAGE_WORKER1:
+            t_thrd.bootstrap_cxt.MyAuxProcType = StorageWorker1Process;
+            break;
+        case STOREAGE_WORKER2:
+            t_thrd.bootstrap_cxt.MyAuxProcType = StorageWorker2Process;
+            break;
+        case STOREAGE_WORKER3:
+            t_thrd.bootstrap_cxt.MyAuxProcType = StorageWorker3Process;
+            break;
+        case STOREAGE_WORKER4:
+            t_thrd.bootstrap_cxt.MyAuxProcType = StorageWorker4Process;
+            break;
 
 
         case WALWRITERAUXILIARY:
@@ -10023,6 +10088,78 @@ int GaussDbAuxiliaryThreadMain(knl_thread_arg* arg)
             break;
 
 
+        //ADDBY TAAS -MAIN
+        case CLIENT_SENDER:
+            ClientSenderMain();
+            proc_exit(1);
+            break;
+        case CLIENT_LISTENER:
+            ClientListenerMain();
+            proc_exit(1);
+            break;
+        case CLIENT_MANAGER:
+            ClientManagerMain();
+            proc_exit(1);
+            break;
+        case CLIENT_WORKER1:
+            ClientSenderMain();
+            proc_exit(1);
+            break;
+        case CLIENT_WORKER2:
+            ClientSenderMain();
+            proc_exit(1);
+            break;
+        case CLIENT_WORKER3:
+            ClientSenderMain();
+            proc_exit(1);
+            break;
+        case CLIENT_WORKER4:
+            ClientSenderMain();
+            proc_exit(1);
+            break;
+        
+        case STOREAGE_SENDER:
+            StorageSenderMain();
+            proc_exit(1);
+            break;
+        case STOREAGE_LISTENER:
+            StorageListenerMain();
+            proc_exit(1);
+            break;
+        case STOREAGE_MANAGER:
+            StorageManagerMain();
+            proc_exit(1);
+            break;
+        case STOREAGE_MESSAGE_MANAGER:
+            StorageMessageManagerMain();
+            proc_exit(1);
+            break;
+        case STOREAGE_UPDATER:
+            StorageUpdaterMain();
+            proc_exit(1);
+            break;
+        case STOREAGE_READER:
+            StorageReaderMain();
+            proc_exit(1);
+            break;
+        case STOREAGE_WORKER1:
+            ClientSenderMain();
+            proc_exit(1);
+            break;
+        case STOREAGE_WORKER2:
+            ClientSenderMain();
+            proc_exit(1);
+            break;
+        case STOREAGE_WORKER3:
+            ClientSenderMain();
+            proc_exit(1);
+            break;
+        case STOREAGE_WORKER4:
+            ClientSenderMain();
+            proc_exit(1);
+            break;
+
+
         case WALWRITERAUXILIARY:
             /* don't set signals, walwriterauxiliary has its own agenda */
             WalWriterAuxiliaryMain();
@@ -10310,6 +10447,25 @@ int GaussDbThreadMain(knl_thread_arg* arg)
         case EPOCH_COMMIT:
         case EPOCH_RECORD_COMMIT:
 
+        //ADDBY TAAS
+        case CLIENT_SENDER:
+        case CLIENT_LISTENER:
+        case CLIENT_MANAGER:
+        case CLIENT_WORKER1:
+        case CLIENT_WORKER2:
+        case CLIENT_WORKER3:
+        case CLIENT_WORKER4:
+
+        case STOREAGE_SENDER:
+        case STOREAGE_LISTENER:
+        case STOREAGE_MANAGER:
+        case STOREAGE_MESSAGE_MANAGER:
+        case STOREAGE_UPDATER:
+        case STOREAGE_READER:
+        case STOREAGE_WORKER1:
+        case STOREAGE_WORKER2:
+        case STOREAGE_WORKER3:
+        case STOREAGE_WORKER4:
 
         case WALWRITERAUXILIARY:
         case WALRECEIVER:
@@ -10721,6 +10877,27 @@ static ThreadMetaData GaussdbThreadGate[] = {
     { GaussDbThreadMain<EPOCH_MERGE>, EPOCH_MERGE, "epochmerge", "epoch merge"},
     { GaussDbThreadMain<EPOCH_COMMIT>, EPOCH_COMMIT, "epochcommit", "epoch commit"},
     { GaussDbThreadMain<EPOCH_RECORD_COMMIT>, EPOCH_RECORD_COMMIT, "epochRecommit", "epoch record commit"},
+
+
+    //ADDBY TAAS
+    { GaussDbThreadMain<CLIENT_SENDER>, CLIENT_SENDER, "clientsender", "client sender"},
+    { GaussDbThreadMain<CLIENT_LISTENER>, CLIENT_LISTENER, "clientlistener", "client listener"},
+    { GaussDbThreadMain<CLIENT_MANAGER>, CLIENT_MANAGER, "clientmanager", "client manager"},
+    { GaussDbThreadMain<CLIENT_WORKER1>, CLIENT_WORKER1, "clientworker1", "client worker1"},
+    { GaussDbThreadMain<CLIENT_WORKER2>, CLIENT_WORKER2, "clientworker1", "client worker2"},
+    { GaussDbThreadMain<CLIENT_WORKER3>, CLIENT_WORKER3, "clientworker1", "client worker3"},
+    { GaussDbThreadMain<CLIENT_WORKER4>, CLIENT_WORKER4, "clientworker1", "client worker4"},
+
+    { GaussDbThreadMain<STOREAGE_SENDER>, STOREAGE_SENDER, "storagesender", "storage sender"},
+    { GaussDbThreadMain<STOREAGE_LISTENER>, STOREAGE_LISTENER, "storagelistener", "storage listener"},
+    { GaussDbThreadMain<STOREAGE_MANAGER>, STOREAGE_MANAGER, "storagemanager", "storage manager"},
+    { GaussDbThreadMain<STOREAGE_MESSAGE_MANAGER>, STOREAGE_MESSAGE_MANAGER, "storagemsgmanager", "storage message manager"},
+    { GaussDbThreadMain<STOREAGE_UPDATER>, STOREAGE_UPDATER, "storageupdater", "storage updater"},
+    { GaussDbThreadMain<STOREAGE_READER>, STOREAGE_READER, "storagereader", "storage reader"},
+    { GaussDbThreadMain<STOREAGE_WORKER1>, STOREAGE_WORKER1, "storageworker1", "storage worker1"},
+    { GaussDbThreadMain<STOREAGE_WORKER2>, STOREAGE_WORKER2, "storageworker2", "storage worker2"},
+    { GaussDbThreadMain<STOREAGE_WORKER3>, STOREAGE_WORKER3, "storageworker3", "storage worker3"},
+    { GaussDbThreadMain<STOREAGE_WORKER4>, STOREAGE_WORKER4, "storageworker4", "storage worker4"},
 
 
     { GaussDbThreadMain<WALWRITERAUXILIARY>, WALWRITERAUXILIARY, "WALwriteraux", "WAL writer auxiliary" },
@@ -11590,6 +11767,9 @@ void GetServerInfo(){
     tinyxml2::XMLElement* delay_ratio = root->FirstChildElement("delay_ratio");
     kDelayRatio = std::stoull(delay_ratio->GetText());
 
+    tinyxml2::XMLElement* is_remote_cache_server_enable_t = root->FirstChildElement("is_remote_cache_server_enable");
+    is_remote_cache_server_enable = std::stoull(is_remote_cache_server_enable_t->GetText())  == 0 ? false : true;
+
     tinyxml2::XMLElement* is_raft_enable_t = root->FirstChildElement("is_raft_enable");
     is_raft_enable = std::stoull(is_raft_enable_t->GetText())  == 0 ? false : true;
 
@@ -11704,4 +11884,96 @@ void GetServerInfo(){
     ereport(LOG, (errmsg("merge_thread_num %d",(int)kUnpackThreadNum)));
     ereport(LOG, (errmsg("commit_thread_num %d",(int)kMergeThreadNum)));
     ereport(LOG, (errmsg("record_commit_thread_num %d",(int)kCommitThreadNum)));
+}
+
+
+
+//ADDBY TAAS
+void GenerateClientThreads(){
+    GetServerInfo();
+    g_instance.pid_cxt.ClientSenderPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
+    if (g_instance.pid_cxt.ClientSenderPIDS == NULL) {
+        ereport(FATAL, (errmsg("communicator palloc ClientSenderPIDS mempry failed")));
+    }
+    for (int i = 0 ; i < 1 ; i++){
+        g_instance.pid_cxt.ClientSenderPIDS[i] = initialize_util_thread(CLIENT_SENDER); 
+        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.ClientSenderPIDS[i]);
+    }
+
+    g_instance.pid_cxt.ClientListenerPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
+    if (g_instance.pid_cxt.ClientListenerPIDS == NULL) {
+        ereport(FATAL, (errmsg("communicator palloc ClientListenerPIDS mempry failed")));
+    }
+    for (int i = 0 ; i < 1 ; i++){
+        g_instance.pid_cxt.ClientListenerPIDS[i] = initialize_util_thread(CLIENT_LISTENER); 
+        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.ClientListenerPIDS[i]);
+    }
+
+    g_instance.pid_cxt.ClientManagerPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
+    if (g_instance.pid_cxt.ClientManagerPIDS == NULL) {
+        ereport(FATAL, (errmsg("communicator palloc ClientManagerPIDS mempry failed")));
+    }
+    for (int i = 0 ; i < 1 ; i++){
+        g_instance.pid_cxt.ClientManagerPIDS[i] = initialize_util_thread(CLIENT_MANAGER); 
+        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.ClientManagerPIDS[i]);
+    }
+
+}
+
+void GenerateStorageThreads(){
+    GetServerInfo();
+    g_instance.pid_cxt.StorageSenderPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
+    if (g_instance.pid_cxt.StorageSenderPIDS == NULL) {
+        ereport(FATAL, (errmsg("communicator palloc StorageSenderPIDS mempry failed")));
+    }
+    for (int i = 0 ; i < 1 ; i++){
+        g_instance.pid_cxt.StorageSenderPIDS[i] = initialize_util_thread(STOREAGE_SENDER); 
+        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.StorageSenderPIDS[i]);
+    }
+
+    g_instance.pid_cxt.StorageListenerPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
+    if (g_instance.pid_cxt.StorageListenerPIDS == NULL) {
+        ereport(FATAL, (errmsg("communicator palloc StorageListenerPIDS mempry failed")));
+    }
+    for (int i = 0 ; i < 1 ; i++){
+        g_instance.pid_cxt.StorageListenerPIDS[i] = initialize_util_thread(STOREAGE_LISTENER); 
+        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.StorageListenerPIDS[i]);
+    }
+
+    g_instance.pid_cxt.StorageManagerPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
+    if (g_instance.pid_cxt.StorageManagerPIDS == NULL) {
+        ereport(FATAL, (errmsg("communicator palloc StorageManagerPIDS mempry failed")));
+    }
+    for (int i = 0 ; i < 1 ; i++){
+        g_instance.pid_cxt.StorageManagerPIDS[i] = initialize_util_thread(STOREAGE_MANAGER); 
+        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.StorageManagerPIDS[i]);
+    }
+
+    g_instance.pid_cxt.StorageMessageManagerPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
+    if (g_instance.pid_cxt.StorageMessageManagerPIDS == NULL) {
+        ereport(FATAL, (errmsg("communicator palloc StorageMessageManagerPIDS mempry failed")));
+    }
+    for (int i = 0 ; i < 2 ; i++){
+        g_instance.pid_cxt.StorageMessageManagerPIDS[i] = initialize_util_thread(STOREAGE_MESSAGE_MANAGER); 
+        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.StorageMessageManagerPIDS[i]);
+    }
+
+    g_instance.pid_cxt.StorageUpdaterPIDS = (ThreadId*)palloc( kStorageUpdaterThreadNum * sizeof(ThreadId));
+    if (g_instance.pid_cxt.StorageUpdaterPIDS == NULL && kStorageUpdaterThreadNum != 0) {
+        ereport(FATAL, (errmsg("communicator palloc StorageUpdaterPIDS mempry failed")));
+    }
+    for (int i = 0 ; i < (int)kStorageUpdaterThreadNum ; i++){
+        g_instance.pid_cxt.StorageUpdaterPIDS[i] = initialize_util_thread(STOREAGE_UPDATER); 
+        epoch_commit_thread_ids.push_back(g_instance.pid_cxt.StorageUpdaterPIDS[i]);
+    }
+
+    g_instance.pid_cxt.StorageReaderPIDS = (ThreadId*)palloc( kStorageReaderThreadNum * sizeof(ThreadId));
+    if (g_instance.pid_cxt.StorageReaderPIDS == NULL && kStorageReaderThreadNum != 0) {
+        ereport(FATAL, (errmsg("communicator palloc StorageUpdaterPIDS mempry failed")));
+    }
+    for (int i = 0 ; i < (int)kStorageReaderThreadNum ; i++){
+        g_instance.pid_cxt.StorageReaderPIDS[i] = initialize_util_thread(STOREAGE_READER); 
+        epoch_commit_thread_ids.push_back(g_instance.pid_cxt.StorageUpdaterPIDS[i]);
+    }
+
 }

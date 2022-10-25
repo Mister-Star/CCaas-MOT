@@ -2876,6 +2876,118 @@ typedef struct knl_t_epochrecordcommit_context {
     int epochrecordcommit_id;
 } knl_t_epochrecordcommit_context;
 
+
+
+//ADDBY TAAS
+
+typedef struct knl_t_clientsender_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int clientsender_id;
+} knl_t_clientsender_context;
+
+typedef struct knl_t_clientlistener_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int clientlistener_id;
+} knl_t_clientlistener_context;
+
+typedef struct knl_t_clientmanager_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int clientmanager_id;
+} knl_t_clientmanager_context;
+
+typedef struct knl_t_clientworker1_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int clientworker1_id;
+} knl_t_clientworker1_context;
+
+typedef struct knl_t_clientworker2_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int clientworker2_id;
+} knl_t_clientworker2_context;
+
+typedef struct knl_t_clientworker3_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int clientworker3_id;
+} knl_t_clientworker3_context;
+
+typedef struct knl_t_clientworker4_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int clientworker4_id;
+} knl_t_clientworker4_context;
+
+
+
+typedef struct knl_t_storagesender_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int storagesender_id;
+} knl_t_storagesender_context;
+
+typedef struct knl_t_storagelistener_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int storagelistener_id;
+} knl_t_storagelistener_context;
+
+typedef struct knl_t_storagemanager_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int storagemanager_id;
+} knl_t_storagemanager_context;
+
+typedef struct knl_t_storagemessagemanager_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int storagemessagemanager_id;
+} knl_t_storagemessagemanager_context;
+
+typedef struct knl_t_storageupdater_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int storageupdater_id;
+} knl_t_storageupdater_context;
+
+typedef struct knl_t_storagereader_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int storagereader_id;
+} knl_t_storagereader_context;
+
+typedef struct knl_t_storageworker1_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int storageworker1_id;
+} knl_t_storageworker1_context;
+
+typedef struct knl_t_storageworker2_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int storageworker2_id;
+} knl_t_storageworker2_context;
+
+typedef struct knl_t_storageworker3_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int storageworker3_id;
+} knl_t_storageworker3_context;
+
+typedef struct knl_t_storageworker4_context {
+    volatile sig_atomic_t got_SIGHUP;
+    volatile sig_atomic_t shutdown_requested;
+    int storageworker4_id;
+} knl_t_storageworker4_context;
+
+
+
+
+
 /* thread context. */
 typedef struct knl_thrd_context {
     knl_thread_role role;
@@ -3000,6 +3112,27 @@ typedef struct knl_thrd_context {
     knl_t_epochmerge_context epochmerge_cxt;
     knl_t_epochcommit_context epochcommit_cxt;
     knl_t_epochrecordcommit_context epochrecordcommit_cxt;
+
+
+        //ADDBY TAAS
+    knl_t_clientsender_context clientsender_cxt;
+    knl_t_clientlistener_context clientlistener_cxt;
+    knl_t_clientmanager_context clientmanager_cxt;
+    knl_t_clientworker1_context clientworker1_cxt;
+    knl_t_clientworker2_context clientworker2_cxt;
+    knl_t_clientworker3_context clientworker3_cxt;
+    knl_t_clientworker4_context clientworker4_cxt;
+
+    knl_t_storagesender_context storagesender_cxt;
+    knl_t_storagelistener_context storagelistener_cxt;
+    knl_t_storagemanager_context storagemanager_cxt;
+    knl_t_storagemessagemanager_context storagemessagemanager_cxt;
+    knl_t_storageupdater_context storageupdater_cxt;
+    knl_t_storagereader_context storagereader_cxt;
+    knl_t_storageworker1_context storageworker1_cxt;
+    knl_t_storageworker2_context storageworker2_cxt;
+    knl_t_storageworker3_context storageworker3_cxt;
+    knl_t_storageworker4_context storageworker4_cxt;
 } knl_thrd_context;
 
 #ifdef ENABLE_MOT

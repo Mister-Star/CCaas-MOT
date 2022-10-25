@@ -185,6 +185,26 @@ typedef struct knl_g_pid_context {
     ThreadId* EpochCommitPIDS;
     ThreadId* EpochRecordCommitPIDS;
 
+        //ADDBY TAAS
+    ThreadId* ClientSenderPIDS;
+    ThreadId* ClientListenerPIDS;
+    ThreadId* ClientManagerPIDS;
+    ThreadId* ClientWorker1PIDS;
+    ThreadId* ClientWorker2PIDS;
+    ThreadId* ClientWorker3PIDS;
+    ThreadId* ClientWorker4PIDS;
+
+    ThreadId* StorageSenderPIDS;
+    ThreadId* StorageListenerPIDS;
+    ThreadId* StorageManagerPIDS;
+    ThreadId* StorageMessageManagerPIDS;
+    ThreadId* StorageUpdaterPIDS;
+    ThreadId* StorageReaderPIDS;
+    ThreadId* StorageWorker1PIDS;
+    ThreadId* StorageWorker2PIDS;
+    ThreadId* StorageWorker3PIDS;
+    ThreadId* StorageWorker4PIDS;
+
 } knl_g_pid_context;
 
 typedef struct knl_g_stat_context {

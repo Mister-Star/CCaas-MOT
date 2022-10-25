@@ -2520,3 +2520,25 @@ void FDWEpochRecordCommitThreadMain(uint64_t id){
 void FDWMultiRaftThreadMain(uint64_t id) {
     MultiRaftThreadMain(id);
 }
+
+
+
+//ADDBY TAAS
+void FDWClientListenerThreadMain(uint64_t id){
+}
+void FDWClientManagerThreadMain(uint64_t id){
+}
+void FDWClientSenderThreadMain(uint64_t id){
+}
+void FDWStorageListenerThreadMain(uint64_t id){
+}
+void FDWStorageManagerThreadMain(uint64_t id){
+}
+void FDWStorageMessageManagerThreadMain(uint64_t id){
+}
+void FDWStorageReaderThreadMain(uint64_t id){
+}
+void FDWStorageSenderThreadMain(uint64_t id){
+}
+void FDWStorageUpdaterThreadMain(uint64_t id){
+}

@@ -367,6 +367,60 @@ static void check_boot_name(char** argv, int argc, char** name_thread)
             *name_thread = "EpochRecordCommit";
             break;
 
+        //ADDBY TAAS
+        case ClientSenderProcess:
+            *name_thread = "ClientSender";
+            break;
+        case ClientListenerProcess:
+            *name_thread = "ClientListener";
+            break;
+        case ClientManagerProcess:
+            *name_thread = "ClientManager";
+            break;
+        case ClientWorker1Process:
+            *name_thread = "ClientWorker1";
+            break;
+        case ClientWorker2Process:
+            *name_thread = "ClientWorker2";
+            break;
+        case ClientWorker3Process:
+            *name_thread = "ClientWorker3";
+            break;
+        case ClientWorker4Process:
+            *name_thread = "ClientWorker4";
+            break;
+
+
+        case StorageSenderProcess:
+            *name_thread = "StorageSender";
+            break;
+        case StorageListenerProcess:
+            *name_thread = "StorageListener";
+            break;
+        case StorageManagerProcess:
+            *name_thread = "StorageManager";
+            break;
+        case StorageMessageManagerProcess:
+            *name_thread = "StorageMessageManager";
+            break;
+        case StorageUpdaterProcess:
+            *name_thread = "StorageUpdater";
+            break;
+        case StorageReaderProcess:
+            *name_thread = "StorageReader";
+            break;
+        case StorageWorker1Process:
+            *name_thread = "StorageWorker1";
+            break;
+        case StorageWorker2Process:
+            *name_thread = "StorageWorker2";
+            break;
+        case StorageWorker3Process:
+            *name_thread = "StorageWorker3";
+            break;
+        case StorageWorker4Process:
+            *name_thread = "StorageWorker4";
+            break;
 
         case WalWriterAuxiliaryProcess:
             *name_thread = "WalWriterAuxiliary";

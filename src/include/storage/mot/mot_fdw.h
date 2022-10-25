@@ -105,4 +105,15 @@ extern void FDWEpochCommitThreadMain(uint64_t id);
 extern void FDWEpochRecordCommitThreadMain(uint64_t id);
 extern void FDWMultiRaftThreadMain(uint64_t id);
 
+//ADDBY TAAS
+extern void FDWClientListenerThreadMain(uint64_t id);
+extern void FDWClientManagerThreadMain(uint64_t id);
+extern void FDWClientSenderThreadMain(uint64_t id);
+extern void FDWStorageListenerThreadMain(uint64_t id);
+extern void FDWStorageManagerThreadMain(uint64_t id);
+extern void FDWStorageMessageManagerThreadMain(uint64_t id);
+extern void FDWStorageReaderThreadMain(uint64_t id);
+extern void FDWStorageSenderThreadMain(uint64_t id);
+extern void FDWStorageUpdaterThreadMain(uint64_t id);
+
 #endif  // MOT_FDW_H

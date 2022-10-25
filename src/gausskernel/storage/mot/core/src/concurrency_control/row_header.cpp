@@ -160,7 +160,7 @@ void RowHeader::WriteChangesToRow(const Access* access, uint64_t csn, uint64_t s
             MOT_ASSERT(access->m_origSentinel->IsCommited() == true);
             if (access->m_params.IsPrimarySentinel()) {
                 // m_csnWord = (csn | ABSENT_BIT | LATEST_VER_BIT);
-                //ADDBY NEUP
+                //ADDBY NEU
                 m_csnWord = (csn | LOCK_BIT | ABSENT_BIT | LATEST_VER_BIT);
                 // and allow reuse of the original row
             }

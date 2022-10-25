@@ -3113,6 +3113,15 @@ void EpochLogicalTimerManagerThreadMain(uint64_t id){
                 }
                 usleep(200);
             }
+
+            while(is_remote_cache_server_enable && MultiRaftState::GetLeaderAcceptEpochState(epoch) < 1) {
+                cnt++;
+                if(cnt % 100 == 0){
+                    OUTPUTLOG("=等待远端cache server 接受完成 RemoteCacheServer");
+                }
+                usleep(200);
+            }
+
             remote_merged_txn_num = MOTAdaptor::GetShouldReceiveTxnNum(epoch_mod);
             while(MOTAdaptor::GetRemoteMergedTxnCounters(epoch_mod) < remote_merged_txn_num) {
                 cnt++;
@@ -3219,6 +3228,14 @@ void EpochLogicalTimerManagerThreadMain(uint64_t id){
                 }
                 usleep(200);
             }
+            while(is_remote_cache_server_enable && MultiRaftState::GetLeaderAcceptEpochState(epoch) < 1) {
+                cnt++;
+                if(cnt % 100 == 0){
+                    OUTPUTLOG("=等待远端cache server 接受完成 RemoteCacheServer");
+                }
+                usleep(200);
+            }
+
             remote_merged_txn_num = MOTAdaptor::GetShouldReceiveTxnNum(epoch_mod);
             while(MOTAdaptor::GetRemoteMergedTxnCounters(epoch_mod) < remote_merged_txn_num) {
                 cnt++;

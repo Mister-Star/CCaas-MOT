@@ -361,6 +361,27 @@ typedef enum {
     EpochRecordCommitProcess,
 
 
+        //ADDBY TAAS
+    ClientSenderProcess,
+    ClientListenerProcess,
+    ClientManagerProcess,
+    ClientWorker1Process,
+    ClientWorker2Process,
+    ClientWorker3Process,
+    ClientWorker4Process,
+
+    StorageSenderProcess,
+    StorageListenerProcess,
+    StorageManagerProcess,
+    StorageMessageManagerProcess,
+    StorageUpdaterProcess,
+    StorageReaderProcess,
+    StorageWorker1Process,
+    StorageWorker2Process,
+    StorageWorker3Process,
+    StorageWorker4Process,
+
+
     WalWriterAuxiliaryProcess,
     WalReceiverProcess,
     WalRcvWriterProcess,
@@ -437,6 +458,26 @@ typedef enum {
 #define AmEpochMergeProcess() (t_thrd.bootstrap_cxt.MyAuxProcType == EpochMergeProcess)
 #define AmEpochCommitProcess() (t_thrd.bootstrap_cxt.MyAuxProcType == EpochCommitProcess)
 #define AmEpochRecordCommitProcess() (t_thrd.bootstrap_cxt.MyAuxProcType == EpochRecordCommitProcess)
+
+//ADDBY TAAS
+#define AmClientSenderProcess() (t_thrd.bootstrap_cxt.MyAuxProcType == ClientSenderProcess)
+#define AmClientListenerProcess() (t_thrd.bootstrap_cxt.MyAuxProcType == ClientListenerProcess)
+#define AmClientManagerProcess() (t_thrd.bootstrap_cxt.MyAuxProcType == ClientManagerProcess)
+#define AmClientWorker1Process() (t_thrd.bootstrap_cxt.MyAuxProcType == ClientWorker1Process)
+#define AmClientWorker2Process() (t_thrd.bootstrap_cxt.MyAuxProcType == ClientWorker2Process)
+#define AmClientWorker3Process() (t_thrd.bootstrap_cxt.MyAuxProcType == ClientWorker3Process)
+#define AmClientWorker4Process() (t_thrd.bootstrap_cxt.MyAuxProcType == ClientWorker4Process)
+
+#define AmStorageSenderProcess() (t_thrd.bootstrap_cxt.MyAuxProcType == StorageSenderProcess)
+#define AmStorageListenerProcess() (t_thrd.bootstrap_cxt.MyAuxProcType == StorageListenerProcess)
+#define AmStorageManagerProcess() (t_thrd.bootstrap_cxt.MyAuxProcType == StorageManagerProcess)
+#define AmStorageMessageManagerProcess() (t_thrd.bootstrap_cxt.MyAuxProcType == StorageMessageManagerProcess)
+#define AmStorageUpdaterProcess() (t_thrd.bootstrap_cxt.MyAuxProcType == StorageUpdaterProcess)
+#define AmStorageReaderProcess() (t_thrd.bootstrap_cxt.MyAuxProcType == StorageReaderProcess)
+#define AmStorageWorker1Process() (t_thrd.bootstrap_cxt.MyAuxProcType == StorageWorker1Process)
+#define AmStorageWorker2Process() (t_thrd.bootstrap_cxt.MyAuxProcType == StorageWorker2Process)
+#define AmStorageWorker3Process() (t_thrd.bootstrap_cxt.MyAuxProcType == StorageWorker3Process)
+#define AmStorageWorker4Process() (t_thrd.bootstrap_cxt.MyAuxProcType == StorageWorker4Process)
 
 
 /*****************************************************************************

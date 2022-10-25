@@ -1056,6 +1056,116 @@ static void knl_t_epochrecordcommit_init(knl_t_epochrecordcommit_context* epochr
 
 
 
+
+//ADDBY TAAS
+static void knl_t_clientsender_init(knl_t_clientsender_context* clientsender_cxt)
+{
+    clientsender_cxt->got_SIGHUP = false;
+    clientsender_cxt->shutdown_requested = false;
+    clientsender_cxt->clientsender_id = -1;
+}
+static void knl_t_clientlistener_init(knl_t_clientlistener_context* clientlistener_cxt)
+{
+    clientlistener_cxt->got_SIGHUP = false;
+    clientlistener_cxt->shutdown_requested = false;
+    clientlistener_cxt->clientlistener_id = -1;
+}
+static void knl_t_clientmanager_init(knl_t_clientmanager_context* clientmanager_cxt)
+{
+    clientmanager_cxt->got_SIGHUP = false;
+    clientmanager_cxt->shutdown_requested = false;
+    clientmanager_cxt->clientmanager_id = -1;
+}
+static void knl_t_clientworker1_init(knl_t_clientworker1_context* clientworker1_cxt)
+{
+    clientworker1_cxt->got_SIGHUP = false;
+    clientworker1_cxt->shutdown_requested = false;
+    clientworker1_cxt->clientworker1_id = -1;
+}
+static void knl_t_clientworker2_init(knl_t_clientworker2_context* clientworker2_cxt)
+{
+    clientworker2_cxt->got_SIGHUP = false;
+    clientworker2_cxt->shutdown_requested = false;
+    clientworker2_cxt->clientworker2_id = -1;
+}
+static void knl_t_clientworker3_init(knl_t_clientworker3_context* clientworker3_cxt)
+{
+    clientworker3_cxt->got_SIGHUP = false;
+    clientworker3_cxt->shutdown_requested = false;
+    clientworker3_cxt->clientworker3_id = -1;
+}
+static void knl_t_clientworker4_init(knl_t_clientworker4_context* clientworker4_cxt)
+{
+    clientworker4_cxt->got_SIGHUP = false;
+    clientworker4_cxt->shutdown_requested = false;
+    clientworker4_cxt->clientworker4_id = -1;
+}
+
+static void knl_t_storagesender_init(knl_t_storagesender_context* storagesender_cxt)
+{
+    storagesender_cxt->got_SIGHUP = false;
+    storagesender_cxt->shutdown_requested = false;
+    storagesender_cxt->storagesender_id = -1;
+}
+static void knl_t_storagelistener_init(knl_t_storagelistener_context* storagelistener_cxt)
+{
+    storagelistener_cxt->got_SIGHUP = false;
+    storagelistener_cxt->shutdown_requested = false;
+    storagelistener_cxt->storagelistener_id = -1;
+}
+static void knl_t_storagemanager_init(knl_t_storagemanager_context* storagemanager_cxt)
+{
+    storagemanager_cxt->got_SIGHUP = false;
+    storagemanager_cxt->shutdown_requested = false;
+    storagemanager_cxt->storagemanager_id = -1;
+}
+static void knl_t_storagemessagemanager_init(knl_t_storagemessagemanager_context* storagemessagemanager_cxt)
+{
+    storagemessagemanager_cxt->got_SIGHUP = false;
+    storagemessagemanager_cxt->shutdown_requested = false;
+    storagemessagemanager_cxt->storagemessagemanager_id = -1;
+}
+static void knl_t_storageupdater_init(knl_t_storageupdater_context* storageupdater_cxt)
+{
+    storageupdater_cxt->got_SIGHUP = false;
+    storageupdater_cxt->shutdown_requested = false;
+    storageupdater_cxt->storageupdater_id = -1;
+}
+static void knl_t_storagereader_init(knl_t_storagereader_context* storagereader_cxt)
+{
+    storagereader_cxt->got_SIGHUP = false;
+    storagereader_cxt->shutdown_requested = false;
+    storagereader_cxt->storagereader_id = -1;
+}
+static void knl_t_storageworker1_init(knl_t_storageworker1_context* storageworker1_cxt)
+{
+    storageworker1_cxt->got_SIGHUP = false;
+    storageworker1_cxt->shutdown_requested = false;
+    storageworker1_cxt->storageworker1_id = -1;
+}
+static void knl_t_storageworker2_init(knl_t_storageworker2_context* storageworker2_cxt)
+{
+    storageworker2_cxt->got_SIGHUP = false;
+    storageworker2_cxt->shutdown_requested = false;
+    storageworker2_cxt->storageworker2_id = -1;
+}
+static void knl_t_storageworker3_init(knl_t_storageworker3_context* storageworker3_cxt)
+{
+    storageworker3_cxt->got_SIGHUP = false;
+    storageworker3_cxt->shutdown_requested = false;
+    storageworker3_cxt->storageworker3_id = -1;
+}
+static void knl_t_storageworker4_init(knl_t_storageworker4_context* storageworker4_cxt)
+{
+    storageworker4_cxt->got_SIGHUP = false;
+    storageworker4_cxt->shutdown_requested = false;
+    storageworker4_cxt->storageworker4_id = -1;
+}
+
+
+
+
+
 static void knl_t_walwriterauxiliary_init(knl_t_walwriterauxiliary_context *const walwriterauxiliary_cxt)
 {
     walwriterauxiliary_cxt->got_SIGHUP = false;
@@ -1688,6 +1798,26 @@ void knl_thread_init(knl_thread_role role)
     knl_t_epochmerge_init(&t_thrd.epochmerge_cxt);
     knl_t_epochcommit_init(&t_thrd.epochcommit_cxt);
     knl_t_epochrecordcommit_init(&t_thrd.epochrecordcommit_cxt);
+
+    //ADDBY TAAS
+    knl_t_clientsender_init(&t_thrd.clientsender_cxt);
+    knl_t_clientlistener_init(&t_thrd.clientlistener_cxt);
+    knl_t_clientmanager_init(&t_thrd.clientmanager_cxt);
+    knl_t_clientworker1_init(&t_thrd.clientworker1_cxt);
+    knl_t_clientworker2_init(&t_thrd.clientworker2_cxt);
+    knl_t_clientworker3_init(&t_thrd.clientworker3_cxt);
+    knl_t_clientworker4_init(&t_thrd.clientworker4_cxt);
+
+    knl_t_storagesender_init(&t_thrd.storagesender_cxt);
+    knl_t_storagelistener_init(&t_thrd.storagelistener_cxt);
+    knl_t_storagemanager_init(&t_thrd.storagemanager_cxt);
+    knl_t_storagemessagemanager_init(&t_thrd.storagemessagemanager_cxt);
+    knl_t_storageupdater_init(&t_thrd.storageupdater_cxt);
+    knl_t_storagereader_init(&t_thrd.storagereader_cxt);
+    knl_t_storageworker1_init(&t_thrd.storageworker1_cxt);
+    knl_t_storageworker2_init(&t_thrd.storageworker2_cxt);
+    knl_t_storageworker3_init(&t_thrd.storageworker3_cxt);
+    knl_t_storageworker4_init(&t_thrd.storageworker4_cxt);
 }
 
 __attribute__ ((__used__)) knl_thrd_context *GetCurrentThread()
