@@ -1084,6 +1084,7 @@ public:
     void SerializeRedo(char* dataOut);
 
     //ADDBY NEU
+	//ADDBY TAAS
     Key* BuildKeyByRow(Row* row, TxnManager* txn, void* buf);
 };
 

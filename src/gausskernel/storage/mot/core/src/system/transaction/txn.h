@@ -174,7 +174,6 @@ public:
      * @brief Convenience interface which does both ValidateCommit and RecordCommit.
      */
     RC Commit();
-    // RC Commit(uint64_t &thread_id);
     void LiteCommit();
 
     /**
@@ -572,131 +571,6 @@ public:
 
     /** @var holds query states from MOTAdaptor */
     std::unordered_map<uint64_t, uint64_t> m_queryState;
-
-public:
-    void CommitInternalII();//ADDBY NEU
-    bool isOnlyRead();
-    void CommitForRemote(uint64_t server_id);
-    RC ValidateOcc();
-    bool localMergeValidate(uint64_t csn);
-
-    inline void SetFailedCommitPrepared(bool value)
-    {
-        m_failedCommitPrepared = value;
-    }
-
-    void SetStartEpoch(uint64_t start_epoch)
-    {
-        startEpoch = start_epoch;
-    }
-    uint64_t GetStartEpoch()
-    {
-        return startEpoch;
-    }
-    void SetStartLogicalEpoch(uint64_t start_logical_epoch)
-    {
-        startLogicalEpoch = start_logical_epoch;
-    }
-    uint64_t GetStartLogicalEpoch()
-    {
-        return startLogicalEpoch;
-    }
-    void SetCommitEpoch(uint64_t commit_epoch) {
-        CommitEpoch = commit_epoch;
-    }
-    uint64_t GetCommitEpoch() {
-        return CommitEpoch;
-    }
-    void SetStartInMerge(bool inMerge){
-        startInMerge = inMerge;
-    }
-    bool GetStartInMerge(){
-        return startInMerge;
-    }
-    
-    void SetIndexPack(uint64_t value)
-    {
-        index_pack = value;
-    }
-    uint64_t GetIndexPack()
-    {
-        return index_pack;
-    }
-
-    void SetBlockTime(uint64_t value)
-    {
-        block_time = value;
-    }
-    uint64_t GetBlockTime()
-    {
-        return block_time;
-    }
-
-    void SetStartMOTExecTime(uint64_t value)
-    {
-        mot_start_exec_time = value;
-    }
-    uint64_t GetStartMOTExecTime()
-    {
-        return mot_start_exec_time;
-    }
-
-    void SetStartMOTCommitTime(uint64_t value)
-    {
-        mot_start_commit_time = value;
-    }
-    uint64_t GetStartMOTCommitTime()
-    {
-        return mot_start_commit_time;
-    }
-
-    void SetZipTime(uint64_t value)
-    {
-        zip_time = value;
-    }
-    uint64_t GetZipTime()
-    {
-        return zip_time;
-    }
-
-    void SetWriteSize(uint64_t value)
-    {
-        write_size = value;
-    }
-    uint64_t GetWriteSize()
-    {
-        return write_size;
-    }
-
-    void SetZipSize(uint64_t value)
-    {
-        zip_size = value;
-    }
-    uint64_t GetZipSize()
-    {
-        return zip_size;
-    }
-
-
-    Key* GetTxnKey(MOT::Index* index, void* buf);
-    
-    void ClearEpochState() {
-        zip_time = write_size = zip_size = startEpoch = startLogicalEpoch = index_pack = CommitEpoch = block_time = mot_start_exec_time = mot_start_commit_time = 0;
-    }
-
-
-
-private:
-
-    bool m_failedCommitPrepared;
-    /** @var timestamp for start and commit of the transaction. */
-    // uint64_t startts;
-    // uint64_t committs;
-    uint64_t startEpoch, startLogicalEpoch, index_pack, mot_start_exec_time, mot_start_commit_time, block_time, zip_time, write_size, zip_size;
-    uint64_t CommitEpoch;
-    bool startInMerge;
-    uint64_t startTime;
-    
 };
 }  // namespace MOT
 

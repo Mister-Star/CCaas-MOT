@@ -452,7 +452,6 @@ RC Table::InsertRowNonTransactional(Row* row, uint64_t tid, Key* k, bool skipSec
 RC Table::InsertRow(Row* row, TxnManager* txn)
 {
     TryRecordTimestamp(1, startExec);//ADDBY NEU HW
-
     MOT::Key* key = nullptr;
     uint64_t surrogateprimaryKey = 0;
     MOT::Index* ix = GetPrimaryIndex();

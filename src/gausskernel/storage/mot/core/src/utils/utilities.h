@@ -56,10 +56,8 @@ std::string ExecOsCommand(const char* cmd);
  */
 std::string HexStr(const uint8_t* data, uint16_t len);
 
-
 uint8_t* StrToUint(std::string data);//ADDBY NEU
-uint64_t now_to_us();
-
+uint64_t now_to_us();//ADDBY TAAS
 
 /** @define Likely execution path to assist compiler optimizations. */
 #ifndef likely

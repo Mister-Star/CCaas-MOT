@@ -71,12 +71,12 @@ public:
      * @brief Constructor.
      * @param row The row manage.
      */
-    explicit inline RowHeader() : m_csnWord(0), stable_csnWord(0)
+    explicit inline RowHeader() : m_csnWord(0)
     {}
 
     inline RowHeader(const RowHeader& src)
     {
-        stable_csnWord = m_csnWord = src.m_csnWord;
+        m_csnWord = src.m_csnWord;
     }
 
     // class non-copy-able, non-assignable, non-movable
@@ -118,9 +118,8 @@ private:
      * @param access Container for the row
      * @param csn Commit Serial Number
      */
-    void WriteChangesToRow(const Access* access, uint64_t csn, uint64_t server_id);
+    void WriteChangesToRow(const Access* access, uint64_t csn);
 
-public:
     /** @brief Locks the row. */
     void Lock();
 
@@ -231,7 +230,7 @@ public:
         m_csnWord &= ~LATEST_VER_BIT;
     }
 
-public:
+private:
     /** @var Transaction identifier and meta data for locking and deleting a row. */
     volatile uint64_t m_csnWord;
 
@@ -241,139 +240,6 @@ public:
     friend CheckpointWorkerPool;
     friend RecoveryOps;
     friend Index;
-
-
-public:
-///ADDBY NEU
-    bool ValidateAndSetWriteForCommit(uint64_t m_csn, uint64_t start_epoch, uint64_t commit_epoch, uint32_t server_id);
-
-    bool IsStableLocked() const
-    {
-        return (stable_csnWord & LOCK_BIT) == LOCK_BIT;
-    }
-
-    void LockStable();
-
-    void ReleaseStable(){
-        MOT_ASSERT(stable_csnWord & LOCK_BIT);
-#if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
-        stable_csnWord = stable_csnWord & (~LOCK_BIT);
-#else
-        uint64_t v = stable_csnWord;
-        while (!__sync_bool_compare_and_swap(&stable_csnWord, v, (v & ~LOCK_BIT))) {
-            PAUSE
-            v = stable_csnWord;
-        }
-#endif
-    }
-
-    uint64_t GetStableCSN() const
-    {
-        return (stable_csnWord & CSN_BITS);
-    }
-
-    /** Set th CSN of the row   */
-    void SetStableCSN(uint64_t csn)
-    {
-        stable_csnWord = (stable_csnWord & STATUS_BITS) | (csn & CSN_BITS);
-    }
-    uint64_t GetStableCommitEpoch() const
-    {
-        return stable_commitEpoch;
-    }
-
-    /** Set th stable   commit epoch of the row   */
-    void SetStableCommitEpoch(uint64_t commit_epoch)
-    {
-        stable_commitEpoch = commit_epoch;
-    }
-
-    uint64_t GetStableStartEpoch() const {
-        return stable_startEpoch;
-    }
-
-    void SetStableStartEpoch(uint64_t start_epoch) {
-        stable_startEpoch = start_epoch;
-    }
-
-    uint64_t GetCommitEpoch() const
-    {
-        return commitEpoch;
-    }
-
-    /** Set th last motify commit epoch of the row   */
-    void SetCommitEpoch(uint64_t commit_epoch)
-    {
-        commitEpoch = commit_epoch;
-    }
-
-    uint64_t GetStartEpoch() const {
-        return startEpoch;
-    }
-
-    void SetStartEpoch(uint64_t start_epoch) {
-        startEpoch = start_epoch;
-    }
-
-    void RecoverToStable(){
-        Lock();
-        startEpoch = stable_startEpoch;
-        commitEpoch = stable_commitEpoch;
-        m_csnWord = stable_csnWord;
-        server_id = stable_server_id;
-        Release();
-    }
-
-    void KeepStable(){
-        stable_startEpoch = startEpoch;
-        stable_commitEpoch = commitEpoch;
-        stable_csnWord = m_csnWord;
-        stable_server_id = server_id;
-    }
-
-    void SetServerId(uint32_t id){
-        server_id = id;
-    }
-
-    uint32_t GetServerId() const{
-        return server_id;
-    }
-
-    void SetStableServerId(uint32_t id){
-        stable_server_id = id;
-    }
-
-    uint32_t GetStableServerId() const{
-        return stable_server_id;
-    }
-
-    uint64_t GetCSN_1() const
-    {
-        return (m_csnWord & CSN_BITS);
-    }
-
-    void Setcsn(uint64_t v) {
-        csn = v;
-    }
-
-    uint64_t Getcsn() {
-        return csn;
-    }
-
-    bool ValidateReadI(TransactionId tid, uint32_t server_id) const;
-    bool ValidateReadForSnap(TransactionId tid, uint64_t start_epoch, uint32_t server_id) const;
-private:
-    volatile uint64_t commitEpoch = 0;//ADDBY NEU
-    volatile uint64_t startEpoch = 0;
-    volatile uint32_t server_id = 0;
-
-    volatile uint64_t stable_csnWord;
-    volatile uint64_t csn;
-    volatile uint64_t stable_commitEpoch = 0;
-    volatile uint64_t stable_startEpoch = 0;
-    volatile uint32_t stable_server_id = 0;
-
-    friend TxnAccess;//ADDBY NEU
 };
 }  // namespace MOT
 

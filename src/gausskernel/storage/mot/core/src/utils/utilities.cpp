@@ -49,8 +49,8 @@
 
 namespace MOT {
 constexpr char hexMap[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-//ADDBY NEU
-std::string ExecOsCommand(const std::string& cmd)
+
+std::string ExecOsCommand(const string& cmd)
 {
     return ExecOsCommand(cmd.c_str());
 }
@@ -79,7 +79,9 @@ std::string HexStr(const uint8_t* data, uint16_t len)
     }
     return outStr;
 }
+
 //ADDBY NEU
+//ADDBY TAAS
 uint8_t* StrToUint(std::string data){
     uint8_t m_keyBuf[data.size()/2];
     uint32_t pos = 0;

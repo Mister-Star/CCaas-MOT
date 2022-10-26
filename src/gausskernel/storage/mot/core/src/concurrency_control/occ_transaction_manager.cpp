@@ -34,7 +34,7 @@
 #include "mm_session_api.h"
 #include "mot_error.h"
 #include <pthread.h>
-#include "../../../fdw_adapter/src/mot_internal.h"//ADDBY NEU
+
 namespace MOT {
 DECLARE_LOGGER(OccTransactionManager, ConcurrenyControl);
 
@@ -403,46 +403,24 @@ void OccTransactionManager::ApplyWrite(TxnManager* txMan)
     }
 }
 
-void OccTransactionManager::WriteChanges(TxnManager* txMan, uint64_t server_id)
+void OccTransactionManager::WriteChanges(TxnManager* txMan)
 {
     if (m_writeSetSize == 0 && m_insertSetSize == 0) {
         return;
     }
-    //ADDBY NEU
-    // LockRows(txMan, m_rowsSetSize);
-    std::map<MOT::Row*, bool> lock_map;
-    lock_map.clear();
-    auto csn = txMan->GetCommitSequenceNumber();
-    TxnOrderedSet_t& orderedSet = txMan->m_accessMgr->GetOrderedRowSet();
-    for (const auto& raPair : orderedSet) {
-        const Access* access = raPair.second;
-        Row* row = access->GetRowFromHeader();
-        AccessType type = access->m_type;
-        if (type == RD) {
-            continue;
-        }
-        if(lock_map[row] == false) {
-            if(is_full_async_exec == true && row->GetRowHeader()->GetCSN() == csn
-                && row->GetRowHeader()->GetServerId() == server_id){
-                row->GetRowHeader()->Lock();
-                row->GetRowHeader()->LockStable();
-            }
-            else {
-                row->GetRowHeader()->Lock();
-                row->GetRowHeader()->LockStable();
-            } 
-            lock_map[row] = true;
-        }
-    }
+
+    LockRows(txMan, m_rowsSetSize);
 
     // Stable rows for checkpoint needs to be created (copied from original row) before modifying the global rows.
     ApplyWrite(txMan);
+
+    TxnOrderedSet_t& orderedSet = txMan->m_accessMgr->GetOrderedRowSet();
 
     // Update CSN with all relevant information on global rows
     // For deletes invalidate sentinels - rows still locked!
     for (const auto& raPair : orderedSet) {
         const Access* access = raPair.second;
-        access->GetRowFromHeader()->m_rowHeader.WriteChangesToRow(access, txMan->GetCommitSequenceNumber(), server_id);
+        access->GetRowFromHeader()->m_rowHeader.WriteChangesToRow(access, txMan->GetCommitSequenceNumber());
     }
 
     // Treat Inserts
@@ -508,28 +486,6 @@ void OccTransactionManager::WriteChanges(TxnManager* txMan, uint64_t server_id)
     }
 
     CleanRowsFromIndexes(txMan);
-        
-    for (const auto& raPair : orderedSet) {
-        const Access* access = raPair.second;
-        Row* row = access->GetRowFromHeader();
-        AccessType type = access->m_type;
-        if (type == RD) {
-            continue;
-        }
-        if(lock_map[row] == true) {
-            if(is_full_async_exec == true && row->GetRowHeader()->GetCSN() == csn 
-                && row->GetRowHeader()->GetServerId() == server_id) {
-                row->GetRowHeader()->ReleaseStable();
-                row->GetRowHeader()->Release();
-            }
-            else {
-                row->GetRowHeader()->ReleaseStable();
-                row->GetRowHeader()->Release();
-            }
-            lock_map[row] = false;
-        }
-    }
-
 }
 
 void OccTransactionManager::CleanRowsFromIndexes(TxnManager* txMan)
@@ -618,234 +574,8 @@ void OccTransactionManager::CleanUp()
     m_rowsSetSize = 0;
 }
 
-
-//ADDBY NEU
-
-bool OccTransactionManager::ValidateReadInMerge(TxnManager * txMan, uint32_t server_id){
-    if(txMan->GetStartLogicalEpoch() == MOTAdaptor::GetLogicalEpoch() && is_full_async_exec == false) return true;
-    TxnOrderedSet_t &orderedSet = txMan->m_accessMgr->GetOrderedRowSet();
-    bool result = true;
-    for (const auto &raPair : orderedSet)
-    {
-        const Access *ac = raPair.second;
-        if (ac->m_type == RD)
-        {
-            // if (!ac->GetRowFromHeader()->m_rowHeader.ValidateRead(ac->m_cts))
-            if (!ac->GetRowFromHeader()->m_rowHeader.ValidateReadI(ac->m_cts, ac->m_server_id))
-            {
-                return false;
-            }
-        }
-    }
-    return result;
-}
-bool OccTransactionManager::ValidateReadInMergeForSnap(TxnManager * txMan, uint32_t server_id){
-    auto start_logical_epoch = txMan->GetStartLogicalEpoch(); 
-    if(start_logical_epoch == MOTAdaptor::GetLogicalEpoch() && is_full_async_exec == false) return true;
-    TxnOrderedSet_t &orderedSet = txMan->m_accessMgr->GetOrderedRowSet();
-    bool result = true;
-    for (const auto &raPair : orderedSet)
-    {
-        const Access *ac = raPair.second;
-        if (ac->m_type == RD)
-        {
-            // if (!ac->GetRowFromHeader()->m_rowHeader.ValidateRead(ac->m_cts))
-            if (!ac->GetRowFromHeader()->m_rowHeader.ValidateReadForSnap(ac->m_cts, start_logical_epoch, ac->m_server_id))
-            {
-                return false;
-            }
-        }
-    }
-    return result;
-}
-
-
-
-void OccTransactionManager::recoverRowHeader(TxnManager * txMan, uint32_t server_id){
-    TxnOrderedSet_t &orderedSet = txMan->m_accessMgr->GetOrderedRowSet();
-    std::string table_name, key, key_temp, csn_temp, csn_result;
-    uint64_t currentCSN;
-    MOT::Key* key_ptr;
-    MOT::Row* row;
-    void* buf;
-    currentCSN = txMan->GetCommitSequenceNumber();
-    csn_temp = std::to_string(currentCSN) + ":" + std::to_string(server_id);
-    for (const auto &raPair : orderedSet){
-        const Access *ac = raPair.second;
-        if (ac->m_type == RD){
-            continue;
-        }
-        if(ac->m_type == INS){
-            table_name = ac->m_localInsertRow->GetTable()->GetLongTableName();
-            key_ptr = ac->m_localInsertRow->GetTable()->BuildKeyByRow(ac->m_localInsertRow, txMan, buf);
-            if(key_ptr == nullptr) assert(false);
-            key = key_ptr->GetKeyStr();
-            key_temp = table_name + key;
-            MOTAdaptor::insertSet.remove(key_temp, csn_temp);
-            MOT::MemSessionFree(buf);
-            continue;
-        }
-        if (!ac->GetRowFromHeader()->m_rowHeader.GetCSN() != txMan->GetCommitSequenceNumber()){
-            continue; //already modify by other txn , no need to recover
-        }
-        else{
-            ac->GetRowFromHeader()->m_rowHeader.RecoverToStable(); 
-        }
-    }
-}
-
-RC OccTransactionManager::CommitPhase(TxnManager *txMan, uint32_t server_id)
-{
-    bool result = ValidateAndSetWriteSet(txMan, server_id);
-    if (result) {
-        return RC::RC_OK;
-    }
-    //是否需要进行recovery
-    // recoverRowHeader(txMan,server_id);//txn abort, need to recover the RowHeader
-    return RC::RC_ABORT;
-}
-
-bool OccTransactionManager::ValidateAndSetWriteSet(TxnManager *txMan, uint32_t server_id)//Commit Phase set csn
-{
-    TxnOrderedSet_t &orderedSet = txMan->m_accessMgr->GetOrderedRowSet();
-    bool result = true;
-    std::string table_name, key, key_temp, csn_temp, csn_result;
-    uint64_t currentCSN;
-    MOT::Row* row;
-    currentCSN = txMan->GetCommitSequenceNumber();
-    csn_temp = std::to_string(currentCSN) + ":" + std::to_string(server_id);
-    for (const auto &raPair : orderedSet){
-        const Access *ac = raPair.second;
-        if (ac->m_type == RD){
-            continue;
-        }
-        else if(ac->m_type == INS) { //已经生成了localInsertRow 问题在于先后插入，先插入的已经完成后将dirty置为true
-            if(ac->m_localInsertRow->GetTable() == nullptr){
-                result = false;
-                continue;
-            }
-            table_name = ac->m_localInsertRow->GetTable()->GetLongTableName();
-            void* buf;
-            MOT::Key* key_ptr = ac->m_localInsertRow->GetTable()->BuildKeyByRow(ac->m_localInsertRow, txMan, buf);
-            // MOT::Key* key_ptr = txMan->GetTxnKey(ac->m_localInsertRow->GetTable()->GetPrimaryIndex());
-            if(key_ptr == nullptr) assert(false);
-            key = key_ptr->GetKeyStr();
-            row = ac->GetSentinel()->GetData();
-            if (!(row == nullptr || row->IsAbsentRow())) {
-                result = false;
-            }
-            key_temp = table_name + key;
-            if(!MOTAdaptor::insertSetForCommit.insert(key_temp, csn_temp, &csn_result)){
-                result = false;
-            }
-            MOTAdaptor::abort_transcation_csn_set.insert(csn_result, csn_result);
-            // MOT::MemSessionFree(buf);   
-        }
-        else{ // update or delete
-            if (ac->m_localRow->GetTable() == nullptr){
-                result = false;
-                continue;
-            }
-            if (ac->m_origSentinel == nullptr || ac->m_origSentinel->IsDirty()) {
-                result = false;
-                continue;
-            }
-            if(!ac->GetRowFromHeader()->m_rowHeader.ValidateAndSetWriteForCommit(txMan->GetCommitSequenceNumber(), txMan->GetStartEpoch(), txMan->GetCommitEpoch(), server_id)){
-                result = false;
-            }
-        }
-    }
-    if(result == false){
-        MOTAdaptor::abort_transcation_csn_set.insert(csn_temp, csn_temp);
-    } 
-    return result;
-}
-
-RC OccTransactionManager::CommitCheck(TxnManager *txMan, uint32_t server_id){ //not use
-    bool result = ValidateWriteSetForCommit(txMan, server_id);
-    if (result){
-        return RC::RC_OK;
-    }
-    return RC::RC_ABORT;
-}
-
-bool OccTransactionManager::ValidateWriteSetForCommit(TxnManager *txMan, uint32_t server_id){ //not use
-    std::string table_name, key, key_temp, csn_temp;
-    MOT::Key* key_ptr;
-    void* buf;
-    csn_temp = std::to_string(txMan->GetCommitSequenceNumber())+ ":" + std::to_string(server_id);
-    uint64_t csn_tmp = txMan->GetCommitSequenceNumber();
-    TxnOrderedSet_t &orderedSet = txMan->m_accessMgr->GetOrderedRowSet();
-    for (const auto &raPair : orderedSet)
-    {
-        const Access *ac = raPair.second;
-        if (ac->m_type == RD or !ac->m_params.IsPrimarySentinel()){
-            continue;
-        }
-        else if(ac->m_type == INS){
-            table_name = ac->m_localInsertRow->GetTable()->GetLongTableName();
-            key_ptr = ac->m_localInsertRow->GetTable()->BuildKeyByRow(ac->m_localInsertRow, txMan, buf);
-            if(key_ptr == nullptr) assert(false);
-            key_temp = table_name + key_ptr->GetKeyStr();
-            // MOT::MemSessionFree(buf);
-            if(MOTAdaptor::insertSetForCommit.contain(key_temp, csn_temp) == false){
-                return false;
-            }
-        }
-        else{
-            MOT::RowHeader& row_header = ac->GetRowFromHeader()->m_rowHeader;
-            if(row_header.GetCSN() != csn_tmp  || row_header.GetServerId() != server_id) {
-                // MOT_LOG_INFO("abort %llu %llu %llu", row_header.GetCSN(), csn_tmp, row_header.Getcsn());
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-void OccTransactionManager::updateInsertSetSize(TxnManager * txMan){
-    TxnAccess *tx = txMan->m_accessMgr.Get();
-    const uint32_t rowCount = tx->m_rowCnt;
-
-    m_writeSetSize = 0;
-    m_rowsSetSize = 0;
-    m_deleteSetSize = 0;
-    m_insertSetSize = 0;
-    m_txnCounter++;
-
-    TxnOrderedSet_t &orderedSet = tx->GetOrderedRowSet();
-    MOT_ASSERT(rowCount == orderedSet.size());
-
-    for (const auto &raPair : orderedSet)
-    {
-        const Access *ac = raPair.second;
-        if (ac->m_params.IsPrimarySentinel())
-        {
-            m_rowsSetSize++;
-        }
-        switch (ac->m_type)
-        {
-            case WR:
-                m_writeSetSize++;
-                break;
-            case DEL:
-                m_writeSetSize++;
-                m_deleteSetSize++;
-                break;
-            case INS:
-                m_insertSetSize++;
-                m_writeSetSize++;
-                break;
-            case RD: /// now only support the "READ-COMMITTED" isolation
-                break;
-            default:
-                break;
-        }
-    }
-}
-
+//ADDBY TAAS
 bool OccTransactionManager::IsReadOnly(TxnManager * txMan){
-    // return txMan->m_accessMgr.Get()->m_rowCnt == 0;
     return m_writeSetSize == 0;
 }
 

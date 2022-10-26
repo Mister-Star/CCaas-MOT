@@ -90,7 +90,7 @@ public:
      * release the locks associated with all the write access items.
      * @param txMan The committing transaction.
      */
-    void WriteChanges(TxnManager* txMan, uint64_t server_id);
+    void WriteChanges(TxnManager* txMan);
 
     /** @brief remove all deleted keys from the global indices   */
     void CleanRowsFromIndexes(TxnManager* txMan);
@@ -204,22 +204,9 @@ private:
     /** @var Validate-no-wait configuration. */
     bool m_validationNoWait;
 
-///ADDBY NEU
+    ///ADDBY TAAS
 public:
-    
     bool IsReadOnly(TxnManager * txMan);
-    bool ValidateReadInMerge(TxnManager * txMan, uint32_t server_id);
-    bool ValidateReadInMergeForSnap(TxnManager * txMan, uint32_t server_id);
-    void recoverRowHeader(TxnManager * txMax, uint32_t server_id);
-    bool ValidateAndSetWriteSet(TxnManager *txMan, uint32_t server_id);
-    bool ValidateWriteSetForCommit(TxnManager *txMan, uint32_t server_id);
-    bool ValidateWriteSet(TxnManager *txMan, uint32_t server_id);
-    void updateInsertSetSize(TxnManager * txMan);
-
-    RC CommitPhase(TxnManager *txMan, uint32_t server_id);
-    RC CommitCheck(TxnManager *txMan, uint32_t server_id);
-    ///
-
 };
 }  // namespace MOT
 

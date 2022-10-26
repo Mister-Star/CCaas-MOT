@@ -189,28 +189,6 @@ RC TxnManager::StartTransaction(uint64_t transactionId, int isolationLevel)
     m_isolationLevel = isolationLevel;
     m_state = TxnState::TXN_START;
     GcSessionStart();
-
-    if(GetStartEpoch() == 0) {
-        SetIndexPack(GetThreadID() % kPackageNum);
-        add_num:
-        SetStartEpoch(MOTAdaptor::GetPhysicalEpoch());//ADDBY NEU
-        // MOT_LOG_INFO("Start Transaction 1 %llu %llu", GetStartEpoch(), MOTAdaptor::GetLogicalEpoch());
-        if(is_sync_exec) {
-            if(!MOTAdaptor::TryIncLocalChangeSetNum(GetStartEpoch(), GetIndexPack(), 1)) goto add_num;
-            // MOT_LOG_INFO("==Start Transaction 1 %llu %llu", GetStartEpoch(), MOTAdaptor::GetLogicalEpoch());
-            // uint64_t cnt = 0;
-            while(GetStartEpoch() > MOTAdaptor::GetLogicalEpoch() || !MOTAdaptor::IsRecordCommitted()) {
-                usleep(200);
-                // cnt ++;
-                // if(cnt % 100 == 0) {
-                //     MOT_LOG_INFO("Start Transaction 1 %llu %llu", GetStartEpoch(), MOTAdaptor::GetLogicalEpoch());
-                // }
-            }
-        }
-        SetCommitEpoch(GetStartEpoch());
-        SetStartLogicalEpoch(MOTAdaptor::GetLogicalEpoch());
-    }
-    
     return RC_OK;
 }
 
@@ -289,7 +267,7 @@ void TxnManager::CommitInternal()
 
     // first write to redo log, then write changes
     m_redoLog.Commit();
-    m_occManager.WriteChanges(this, 0);
+    m_occManager.WriteChanges(this);
 
     if (GetGlobalConfiguration().m_enableCheckpoint) {
         GetCheckpointManager()->EndCommit(this);
@@ -307,22 +285,19 @@ RC TxnManager::ValidateCommit()
 
 void TxnManager::RecordCommit()
 {
-    //ADDBY NEU
-    // CommitInternal();
-    CommitInternalII();//原来为CommitInternal
+    CommitInternal();
     MOT::DbSessionStatisticsProvider::GetInstance().AddCommitTxn();
 }
 
-//ADDBY NEU
-// RC TxnManager::Commit()
-// {
-//     // Validate concurrency control
-//     RC rc = ValidateCommit();
-//     if (rc == RC_OK) {
-//         RecordCommit();
-//     }
-//     return rc;
-// }
+RC TxnManager::Commit()
+{
+    // Validate concurrency control
+    RC rc = ValidateCommit();
+    if (rc == RC_OK) {
+        RecordCommit();
+    }
+    return rc;
+}
 
 void TxnManager::LiteCommit()
 {
@@ -343,7 +318,7 @@ void TxnManager::CommitPrepared()
 
     // first write to redo log, then write changes
     m_redoLog.CommitPrepared();
-    m_occManager.WriteChanges(this, 0);
+    m_occManager.WriteChanges(this);
 
     if (GetGlobalConfiguration().m_enableCheckpoint) {
         GetCheckpointManager()->EndCommit(this);
@@ -1290,345 +1265,4 @@ RC TxnManager::DropIndex(MOT::Index* index)
     m_txnDdlAccess->Add(new_ddl_access);
     return res;
 }
-
-
-
-
-
-
-
-
-
-
-//ADDBY NEU
-bool TxnManager::localMergeValidate(uint64_t csn)
-{
-    TxnOrderedSet_t& orderedSet = this->m_accessMgr->GetOrderedRowSet();
-    for (const auto& raPair : orderedSet) {
-        const Access* ac = raPair.second;
-        if (ac->m_type == RD or !ac->m_params.IsPrimarySentinel()) {
-            continue;
-        }
-
-        if (ac->GetRowFromHeader()->GetCommitSequenceNumber()!=csn) {
-            return false;
-        }
-    }
-    return true;
-}
-bool TxnManager::isOnlyRead()
-{
-    return m_occManager.IsReadOnly(this);
-    TxnOrderedSet_t &orderedSet = this->m_accessMgr->GetOrderedRowSet();
-    if (orderedSet.size() == 0)
-        return false;
-    for (const auto &raPair : orderedSet)
-    {
-        const Access *ac = raPair.second;
-        if (ac->m_type != RD)
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-
-
-void TxnManager::CommitInternalII()
-{
-    // first write to redo log, then write changes
-    
-    //不写log
-    m_redoLog.Commit();
-    m_occManager.WriteChanges(this, 0);
-    
-    if (GetGlobalConfiguration().m_enableCheckpoint) {
-        GetCheckpointManager()->EndCommit(this);
-    }
-
-    if (!GetGlobalConfiguration().m_enableRedoLog) {
-        m_occManager.ReleaseLocks(this);
-    }
-    
-    if(!m_occManager.IsReadOnly(this)){
-        auto epoch_mod = GetCommitEpoch() % MOTAdaptor::max_length;
-        MOTAdaptor::IncRecordCommittedTxnCounters(epoch_mod, GetIndexPack());
-        // MOTAdaptor::Commit(this, GetIndexPack());
-        while(!MOTAdaptor::IsRemoteRecordCommitted()) usleep(200);
-    }
-    // ClearEpochState();
-}
-
-void TxnManager::CommitForRemote(uint64_t server_id)
-{
-    m_occManager.updateInsertSetSize(this);
-    // MOT_LOG_INFO("m_occManager.IsReadOnly(this) %u", m_occManager.IsReadOnly(this));
-    // 对远端事务的update无法进行统计 未添加进入txnmanager中
-    // CommitInternalII();
-    m_redoLog.Commit();
-    m_occManager.WriteChanges(this, server_id);
-
-    if (GetGlobalConfiguration().m_enableCheckpoint) {
-        GetCheckpointManager()->EndCommit(this);
-    }
-
-    if (!GetGlobalConfiguration().m_enableRedoLog) {
-        m_occManager.ReleaseLocks(this);
-    }
-    MOT::DbSessionStatisticsProvider::GetInstance().AddCommitTxn();
-}
-
-//txn.cpp
-/**
- * @brief Commit
- * 改动：改为先写胜利的情况下，不需要precommit阶段，只保留两个计数器
- * 新增 while(MOTAdaptor::GetPhysicalEpoch() != MOTAdaptor::GetLogicalEpoch()) ; 
- * 只有当logical epoch和 physical epoch 相差1时才能继续接收新事务
- * while(!MOTAdaptor::isRemoteExeced()|| !MOTAdaptor::isMergeSent()); 改为while(!MOTAdaptor::isRemoteExeced());
- * 发送线程无影响
- * */
-std::atomic<int> wait_count(0);
-std::atomic<int> wait_count_commit(0);
-RC TxnManager::Commit(){
-
-    if(is_raft_enable == 1 && local_ip_index == kRaftStopServerId && kRaftStopEpoch > 0 && MOTAdaptor::GetPhysicalEpoch() > kRaftStopEpoch) {
-        while(MOTAdaptor::GetPhysicalEpoch() < kRaftRestrtEpoch) usleep(kSleepTime);
-    }
-    
-    m_occManager.updateInsertSetSize(this);
-    bool result = m_occManager.IsReadOnly(this);
-    uint64_t index_pack = GetIndexPack();
-    uint64_t index_notify = index_pack % kNotifyNum;
-    uint64_t index_unique =  MOTAdaptor::IncLocalTxnIndex(GetStartEpoch() % MOTAdaptor::max_length, index_pack);
-    uint64_t cnt = 0;
-    RC rc = RC_OK;
-    if(kDelayRatio > 0) {
-        std::default_random_engine random;
-        random.seed(time(0));
-        if(random() % 100 < kDelayRatio)
-            usleep(kDelayTime);
-    }
-    SetStartMOTCommitTime(now_to_us());
-
-    if(is_full_async_exec) {
-        if (this->m_accessMgr->m_rowCnt > 0 && !result){
-            (*MOTAdaptor::write_total_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-            if(is_snap_isolation){
-                if(!m_occManager.ValidateReadInMergeForSnap(this, local_ip_index)){
-                    (*MOTAdaptor::write_abort_before_send_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                    return RC_ABORT;
-                }
-            }
-            else if(is_read_repeatable){
-                if(!m_occManager.ValidateReadInMerge(this, local_ip_index)){
-                    (*MOTAdaptor::write_abort_before_send_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                    return RC_ABORT;
-                }
-            }
-            if(!MOTAdaptor::InsertTxntoLocalChangeSet(this, index_pack, index_unique)){// 当生成txn失败时abort，为send_before_abort，enqueue必定成功，否则assert
-                    (*MOTAdaptor::write_abort_before_send_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                return RC_ABORT;
-            }
-            auto time1 = now_to_us();
-            auto epoch_mod = GetCommitEpoch() % MOTAdaptor::max_length;
-            m_occManager.CommitPhase(this, local_ip_index);
-            
-            if(rc == RC_OK){
-                MOTAdaptor::IncRecordCommitTxnCounters(epoch_mod, index_pack);
-                (*MOTAdaptor::write_committed_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                if(is_breakdown) {
-                    auto time2 = now_to_us();
-                    MOT_LOG_INFO("full async 事务提交 读写 epoch:%llu StartMOTExecTime %llu StartMOTCommitTime %llu ValidateFinishTime %llu BlockTime %llu MOTExecTime %llu MOTValidateTime %llu MOTTotalTime %llu ZipTime %llu ZipSize %llu WriteSize %llu",
-                        GetCommitEpoch(), GetStartMOTExecTime(), GetStartMOTCommitTime(), time2, GetBlockTime(), ((GetStartMOTCommitTime() - GetStartMOTExecTime()) - GetBlockTime()), time2 - GetStartMOTCommitTime(), time2 - GetStartMOTExecTime(), GetZipTime(), GetZipSize(), GetWriteSize());//sync
-                }
-            }
-            return RC_OK;
-        }
-        else{
-            (*MOTAdaptor::read_total_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-            auto time1 = now_to_us();
-            if(is_snap_isolation){
-                if(!m_occManager.ValidateReadInMergeForSnap(this, local_ip_index)){
-                    (*MOTAdaptor::read_abort_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                    return RC_ABORT;
-                }
-            }
-            else if(is_read_repeatable){
-                if(!m_occManager.ValidateReadInMerge(this, local_ip_index)){
-                    (*MOTAdaptor::read_abort_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                    return RC_ABORT;
-                }
-            }
-            (*MOTAdaptor::read_committed_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-            if(is_breakdown) {
-                auto time2 = now_to_us();
-                MOT_LOG_INFO("full async 事务提交 只读 epoch:%llu StartMOTExecTime %llu StartMOTCommitTime %llu ValidateFinishTime %llu BlockTime %llu MOTExecTime %llu MOTValidateTime %llu MOTTotalTime %llu ZipTime %llu ZipSize %llu WriteSize %llu",
-                        GetCommitEpoch(), GetStartMOTExecTime(), GetStartMOTCommitTime(), time2, GetBlockTime(), ((GetStartMOTCommitTime() - GetStartMOTExecTime()) - GetBlockTime()), time2 - GetStartMOTCommitTime(), time2 - GetStartMOTExecTime(), GetZipTime(), GetZipSize(), GetWriteSize());//sync
-            }
-            return RC_OK;
-        }
-    }
-
-    if(is_sync_exec) {
-        if (this->m_accessMgr->m_rowCnt > 0 && !result){
-            // MOT_LOG_INFO("epoch %llu commit() write", GetStartEpoch());
-            (*MOTAdaptor::write_total_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-            if(is_snap_isolation){
-                if(!m_occManager.ValidateReadInMergeForSnap(this, local_ip_index)){
-                    (*MOTAdaptor::write_abort_before_send_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                    return RC_ABORT;
-                }
-            }
-            else if(is_read_repeatable){
-                if(!m_occManager.ValidateReadInMerge(this, local_ip_index)){
-                    (*MOTAdaptor::write_abort_before_send_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                    return RC_ABORT;
-                }
-            }
-            if(!MOTAdaptor::InsertTxntoLocalChangeSet(this, index_pack, index_unique)){// 当生成txn失败时abort，为send_before_abort，enqueue必定成功，否则assert
-                    (*MOTAdaptor::write_abort_before_send_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                return RC_ABORT;
-            }
-            auto time1 = now_to_us();
-            cnt = 0;
-            while(GetCommitEpoch() > MOTAdaptor::GetLogicalEpoch() || !MOTAdaptor::IsRecordCommitted()){
-                usleep(200);
-            }
-            auto epoch_mod = GetCommitEpoch() % MOTAdaptor::max_length;
-            MOTAdaptor::IncLocalTxnCounters(epoch_mod, index_pack);
-            MOTAdaptor::IncLocalTxnExcCounters(epoch_mod, index_pack);
-            rc = m_occManager.CommitPhase(this, local_ip_index);
-            MOTAdaptor::IncLocalExecedCounters(epoch_mod, index_pack);
-            if (rc != RC_ABORT){    
-                while(!MOTAdaptor::IsRemoteExeced()) {
-                    usleep(200);
-                }
-                auto csn_temp = std::to_string(GetCommitSequenceNumber()) + ":" + std::to_string(local_ip_index);
-                if(MOTAdaptor::abort_transcation_csn_set.contain(csn_temp, csn_temp)){
-                    rc = RC_ABORT;
-                }
-            }
-            
-            if(rc == RC_OK){
-                MOTAdaptor::IncRecordCommitTxnCounters(epoch_mod, index_pack);
-                (*MOTAdaptor::write_committed_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                if(is_breakdown) {
-                    auto time2 = now_to_us();
-                    MOT_LOG_INFO("sync 事务提交 读写 epoch:%llu StartMOTExecTime %llu StartMOTCommitTime %llu ValidateFinishTime %llu BlockTime %llu MOTExecTime %llu MOTValidateTime %llu MOTTotalTime %llu ZipTime %llu ZipSize %llu WriteSize %llu",
-                        GetCommitEpoch(), GetStartMOTExecTime(), GetStartMOTCommitTime(), time2, GetBlockTime(), ((GetStartMOTCommitTime() - GetStartMOTExecTime()) - GetBlockTime()), time2 - GetStartMOTCommitTime(), time2 - GetStartMOTExecTime(), GetZipTime(), GetZipSize(), GetWriteSize());//sync
-                }
-            }
-            else {
-                (*MOTAdaptor::write_abort_after_send_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-            }
-
-            MOTAdaptor::IncLocalCommittedCounters(epoch_mod, index_pack);
-            return rc;
-        }
-        else{
-            (*MOTAdaptor::read_total_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-            auto time1 = now_to_us();
-            if(is_snap_isolation){
-                if(!m_occManager.ValidateReadInMergeForSnap(this, local_ip_index)){
-                    (*MOTAdaptor::read_abort_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                    return RC_ABORT;
-                }
-            }
-            else if(is_read_repeatable){
-                if(!m_occManager.ValidateReadInMerge(this, local_ip_index)){
-                    (*MOTAdaptor::read_abort_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                    return RC_ABORT;
-                }
-            }
-            (*MOTAdaptor::read_committed_txn_num[(GetStartEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-            if(is_breakdown) {
-                auto time2 = now_to_us();
-                MOT_LOG_INFO("sync 事务提交 只读 epoch:%llu StartMOTExecTime %llu StartMOTCommitTime %llu ValidateFinishTime %llu BlockTime %llu MOTExecTime %llu MOTValidateTime %llu MOTTotalTime %llu ZipTime %llu ZipSize %llu WriteSize %llu",
-                        GetCommitEpoch(), GetStartMOTExecTime(), GetStartMOTCommitTime(), time2, GetBlockTime(), ((GetStartMOTCommitTime() - GetStartMOTExecTime()) - GetBlockTime()), time2 - GetStartMOTCommitTime(), time2 - GetStartMOTExecTime(), GetZipTime(), GetZipSize(), GetWriteSize());//sync
-            }
-            return RC_OK;
-        }
-    }
-    else {
-        if (this->m_accessMgr->m_rowCnt > 0 && !result){
-            if(is_snap_isolation){
-                if(!m_occManager.ValidateReadInMergeForSnap(this, local_ip_index)){
-                    return RC_ABORT;
-                }
-            }
-            else if(is_read_repeatable){
-                if(!m_occManager.ValidateReadInMerge(this, local_ip_index)){
-                    return RC_ABORT;
-                }
-            }
-            if(!MOTAdaptor::InsertTxntoLocalChangeSet(this, index_pack, index_unique)){
-                (*MOTAdaptor::write_abort_before_send_txn_num[(GetCommitEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                return RC_ABORT;
-            }
-            auto time1 = now_to_us();
-            cnt = 0;
-            while(GetCommitEpoch() > MOTAdaptor::GetLogicalEpoch() || !MOTAdaptor::IsRecordCommitted()){
-                usleep(200);
-            }
-            auto epoch_mod = GetCommitEpoch() % MOTAdaptor::max_length;
-            auto time3 = now_to_us();
-            this->SetBlockTime(time3 - time1);
-            MOTAdaptor::IncLocalTxnCounters(epoch_mod, index_pack);
-            MOTAdaptor::IncLocalTxnExcCounters(epoch_mod, index_pack);
-
-            // rc = m_occManager.ExecutionPhase(this, local_ip_index);
-            rc = m_occManager.CommitPhase(this, local_ip_index);
-            MOTAdaptor::IncLocalExecedCounters(epoch_mod, index_pack);
-            
-            if(rc != RC_ABORT){    
-                while(!MOTAdaptor::IsRemoteExeced()) {
-                    usleep(200);
-                }
-                auto csn_temp = std::to_string(GetCommitSequenceNumber()) + ":" + std::to_string(local_ip_index);
-                if(MOTAdaptor::abort_transcation_csn_set.contain(csn_temp, csn_temp)){
-                    rc = RC_ABORT;
-                }
-                if(m_occManager.CommitCheck(this, local_ip_index) == RC_ABORT) {
-                    rc = RC_ABORT;
-                }
-            }
-            
-            if(rc == RC_OK){
-                MOTAdaptor::IncRecordCommitTxnCounters(epoch_mod, index_pack);
-                (*MOTAdaptor::write_committed_txn_num[(GetCommitEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-                if(is_breakdown) {
-                    auto time2 = now_to_us();
-                    MOT_LOG_INFO("async 事务提交 读写 epoch:%llu StartMOTExecTime %llu StartMOTCommitTime %llu ValidateFinishTime %llu BlockTime %llu MOTExecTime %llu MOTValidateTime %llu MOTTotalTime %llu ZipTime %llu ZipSize %llu WriteSize %llu",
-                        GetCommitEpoch(), GetStartMOTExecTime(), GetStartMOTCommitTime(), time2, GetBlockTime(), (GetStartMOTCommitTime() - GetStartMOTExecTime()), (time2 - GetStartMOTCommitTime() - GetBlockTime()), time2 - GetStartMOTExecTime(), GetZipTime(), GetZipSize(), GetWriteSize());
-                }
-            }
-            else {
-                (*MOTAdaptor::write_abort_after_send_txn_num[(GetCommitEpoch() % MOTAdaptor::_max_length)])[GetIndexPack()]->fetch_add(1);
-            }
-            MOTAdaptor::IncLocalCommittedCounters(epoch_mod, index_pack);
-            return rc;
-        }
-        else{
-            auto time1 = now_to_us();
-            if(is_snap_isolation){
-                if(!m_occManager.ValidateReadInMergeForSnap(this, local_ip_index)){
-                    return RC_ABORT;
-                }
-            }
-            else if(is_read_repeatable){
-                if(!m_occManager.ValidateReadInMerge(this, local_ip_index)){
-                    return RC_ABORT;
-                }
-            }
-            if(is_breakdown) {
-                auto time2 = now_to_us();
-                MOT_LOG_INFO("async 事务提交 只读 epoch:%llu StartMOTExecTime %llu StartMOTCommitTime %llu ValidateFinishTime %llu BlockTime %llu MOTExecTime %llu MOTValidateTime %llu MOTTotalTime %llu ZipTime %llu ZipSize %llu WriteSize %llu",
-                    GetCommitEpoch(), GetStartMOTExecTime(), GetStartMOTCommitTime(), time2, GetBlockTime(), (GetStartMOTCommitTime() - GetStartMOTExecTime()), (time2 - GetStartMOTCommitTime() - GetBlockTime()), time2 - GetStartMOTExecTime(), GetZipTime(), GetZipSize(), GetWriteSize());
-            }
-            return RC_OK;
-        }
-    }
-}
-
 }  // namespace MOT

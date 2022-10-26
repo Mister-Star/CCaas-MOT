@@ -145,9 +145,6 @@ public:
         // If so we copy garbage and we fall in validation.
         if (data != nullptr) {
             errno_t erc = memcpy_s(m_data, GetTupleSize(), data, size);
-            if (erc == ERANGE_AND_RESET) {
-                assert(false);
-            }
             securec_check(erc, "\0", "\0");
         }
     }
@@ -259,7 +256,6 @@ public:
     inline void SetCommitSequenceNumber(uint64_t csn)
     {
         m_rowHeader.SetCSN(csn);
-        // m_rowHeader.SetStableCSN(csn);
     }
 
     /**
@@ -616,35 +612,6 @@ protected:
     friend Table;
 
     DECLARE_CLASS_LOGGER()
-
-//ADDBY NEU
-public:
-    bool ValidateAndSetWriteForRemote(uint64_t m_csn, uint64_t start_epoch, uint64_t commit_epoch, uint32_t server_id) {
-        return this->m_rowHeader.ValidateAndSetWriteForCommit(m_csn, start_epoch, commit_epoch, server_id);
-    }
-
-    uint32_t GetServerId(){
-        return this->m_rowHeader.GetServerId();
-    }
-
-    uint64_t GetStableCSN(){
-        return this->m_rowHeader.GetStableCSN();
-    }
-
-    uint32_t GetStableServerId(){
-        return this->m_rowHeader.GetStableServerId();
-    }
-
-    void RecoverToStable(){
-        this->m_rowHeader.RecoverToStable();
-    }
-
-    RowHeader* GetRowHeader(){
-        return &(this->m_rowHeader);
-    }
-
-    void SetValueVariable_1(int id, const void* ptr, uint32_t size);
-    
 };
 }  // namespace MOT
 
