@@ -29,6 +29,10 @@
 #include <iomanip>
 #include <pthread.h>
 #include <cstring>
+#include "transaction.pb.h"
+#include "client.pb.h"
+#include "server.pb.h"
+#include "storage.pb.h"
 #include "message.pb.h"
 #include "postgres.h"
 #include "access/dfs/dfs_query.h"
@@ -560,8 +564,7 @@ MOT::RC MOTAdaptor::ValidateCommit()
     EnsureSafeThreadAccessInline();
     MOT::TxnManager* txn = GetSafeTxn(__FUNCTION__);
     if (!IS_PGXC_COORDINATOR) {
-        // return txn->ValidateCommit();//ADDBY NEU change to Commit
-        return txn->Commit();
+        return txn->ValidateCommit();//ADDBY NEU change to Commit
     } else {
         // Nothing to do in coordinator
         return MOT::RC_OK;
@@ -574,7 +577,8 @@ void MOTAdaptor::RecordCommit(uint64_t csn)
     MOT::TxnManager* txn = GetSafeTxn(__FUNCTION__);
     txn->SetCommitSequenceNumber(csn);
     if (!IS_PGXC_COORDINATOR) {
-        txn->RecordCommit();
+        // txn->RecordCommit();
+        //ADDBY TAAS do nothing
     } else {
         txn->LiteCommit();
     }
@@ -2228,4 +2232,579 @@ void ReleaseFdwState(MOTFdwStateSt* state)
 
     state->m_table = NULL;
     pfree(state);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+std::atomic<int> cpu_index(1);
+void SetCPU(){
+    cpu_set_t logicalEpochSet;
+    CPU_ZERO(&logicalEpochSet);
+    CPU_SET(cpu_index.fetch_add(1), &logicalEpochSet); //2就是核心号
+    int rc = sched_setaffinity(0, sizeof(cpu_set_t), &logicalEpochSet);
+    if (rc == -1) {
+        ereport(FATAL, (errmsg("绑核失败")));
+    }
+}
+
+void string_free(void *data, void *hint){
+    delete static_cast<std::string*>(hint);
+}
+
+uint64_t now_to_us(){
+    return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+template<typename key, typename value>
+class ConcurrentHashMap {
+public:
+    typedef typename std::unordered_map<key, value>::iterator map_iterator;
+    typedef typename std::unordered_map<key, value>::size_type size_type;
+
+    bool insert(key &k, value &v, value *p) {
+        std::mutex& _mutex_temp = GetMutexRef(k);
+        std::unordered_map<key, value>& _map_temp = GetMapRef(k);
+        map_iterator iter = map.find(k);
+        if (iter == _map_temp.end()) {
+            _map_temp[k] = v;
+            *p = nullptr;
+        } else {
+            *p = _map_temp[k];
+            _map_temp[k] = v;
+        }
+        lock.unlock();
+        return true;
+    }
+
+    void insert(key &k, value &v) {
+        std::mutex& _mutex_temp = GetMutexRef(k);
+        std::unordered_map<key, value>& _map_temp = GetMapRef(k);
+        std::unique_lock<std::mutex> lock(_mutex_temp);
+        _map_temp[k] = v;
+    }
+
+
+    void remove(key &k, value &v) {
+        std::mutex& _mutex_temp = GetMutexRef(k);
+        std::unordered_map<key, value>& _map_temp = GetMapRef(k);
+        std::unique_lock<std::mutex> lock(_mutex_temp);
+        map_iterator iter = _map_temp.find(k);
+        if (iter != _map_temp.end()) {
+            if (iter->second == v) {
+                _map_temp.erase(iter);
+            } 
+        }
+        lock.unlock();
+    }
+
+    void remove(key &k) {
+        std::mutex& _mutex_temp = GetMutexRef(k);
+        std::unordered_map<key, value>& _map_temp = GetMapRef(k);
+        std::unique_lock<std::mutex> lock(_mutex_temp);
+        map_iterator iter = _map_temp.find(k);
+        if (iter != _map_temp.end()) {
+            _map_temp.erase(iter);
+        }
+        lock.unlock();
+    }
+
+    void clear() {
+        for(uint64_t i = 0; i < _N; i ++){
+            std::unique_lock<std::mutex> lock(_mutex[i]);
+            _map[i].clear();
+        }
+    }
+
+    void unsafe_clear() { 
+        for(uint64_t i = 0; i < _N; i ++){
+            _map[i].clear();
+        }
+    }
+
+    bool contain(key &k, value &v){
+        std::unordered_map<key, value>& _map_temp = GetMapRef(k);
+        map_iterator iter = _map_temp.find(k);
+        if(iter != _map_temp.end()){
+            if(iter->second == v){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool contain(key &k){
+        std::unordered_map<key, value>& _map_temp = GetMapRef(k);
+        map_iterator iter = _map_temp.find(k);
+        if(iter != _map_temp.end()){
+            return true;
+        }
+        return false;
+    }
+
+    bool unsafe_contain(key &k, value &v){
+        std::unordered_map<key, value>& _map_temp = GetMapRef(k);
+        map_iterator iter = _map_temp.find(k);
+        if(iter != _map_temp.end()){
+            if(iter->second == v){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    size_type size() {
+        size_type ans = 0;
+        for(uint64_t i = 0; i < _N; i ++){
+            std::unique_lock<std::mutex> lock(_mutex[i]);
+            ans += _map[i].size();
+        }
+        return ans;
+    }
+
+protected:
+    inline std::unordered_map<key, value>& GetMapRef(const key k){ return _map[(_hash(k) % _N)]; }
+    inline std::unordered_map<key, value>& GetMapRef(const key k) const { return _map[(_hash(k) % _N)]; }
+    inline std::mutex& GetMutexRef(const key k) { return _mutex[(_hash(k) % _N)]; }
+    inline std::mutex& GetMutexRef(const key k) const {return _mutex[(_hash(k) % _N)]; }
+
+private:
+    const static uint64_t _N = 997;//1217 12281 122777 prime
+    std::hash<key> _hash;
+    std::unordered_map<key, value> _map[_N];
+    std::mutex _mutex[_N];
+};
+
+
+
+
+template<typename T>
+using BlockingConcurrentQueue =  moodycamel::BlockingConcurrentQueue<T>;
+
+struct send_thread_params{
+    uint64_t current_epoch;
+    uint64_t tot;
+    std::string* merge_request_ptr;
+    send_thread_params(uint64_t ce, uint64_t tot_temp, std::string* ptr1):
+        current_epoch(ce), tot(tot_temp), merge_request_ptr(ptr1){}
+    send_thread_params(){}
+};
+
+
+std::string* Gzip(std::unique_ptr<proto::Message> && msg) {
+    auto serialized_str_ptr = new std::string();
+    google::protobuf::io::GzipOutputStream::Options options;
+    options.format = google::protobuf::io::GzipOutputStream::GZIP;
+    options.compression_level = 9;
+    google::protobuf::io::StringOutputStream outputStream(&(*serialized_str_ptr));
+    google::protobuf::io::GzipOutputStream gzipStream(&outputStream, options);
+    msg->SerializeToZeroCopyStream(&gzipStream);
+    gzipStream.Close();
+    return serialized_str_ptr;
+}
+
+//**************************************************************************************************************************************************************************************************
+//*****                                                                                                                                                                                        *****
+//*****                                                                                                                                                                                        ***** 
+//*****                                                                                      TAAS    Client                                                                                    *****
+//*****                                                                                                                                                                                        ***** 
+//*****                                                                                                                                                                                        ***** 
+//**************************************************************************************************************************************************************************************************
+
+BlockingConcurrentQueue<std::unique_ptr<zmq::message_t>> client_listen_message_queue;
+BlockingConcurrentQueue<std::unique_ptr<send_thread_params>> client_send_message_queue;
+BlockingConcurrentQueue<std::unique_ptr<proto::Message>> client_other_message_queue;
+
+std::unique_ptr<std::mutex> client_send_mutex, client_listen_mutex;
+std::shared_ptr<zmq::context_t> client_send_context, client_listen_context;
+std::shared_ptr<zmq::socket_t> client_send_socket, client_listen_socket;
+std::atomic<bool> client_init_ok_flag(false);
+ConcurrentHashMap<uint64_t, MOT::TxnManager**> txn_map;
+std::atomic<uint64_t> local_csn(1);
+
+bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
+    auto msg = std::make_unique<proto::Message>();
+    auto* txn = msg->mutable_txn();
+    proto::Row *row;
+    proto::Column* col;
+    proto::OpType op_type;
+    MOT::Row* local_row = nullptr;
+    MOT::Key* key = nullptr;
+    void* buf = nullptr; 
+    uint64_t fieldCnt;
+    const MOT::Access* access = nullptr;
+    MOT::BitmapSet* bmp;
+    MOT::TxnOrderedSet_t &orderedSet = txMan->m_accessMgr->GetOrderedRowSet();
+    for (const auto &raPair : orderedSet){
+        access = raPair.second;
+        row = txn->add_row();
+        if (access->m_type == MOT::RD) {
+            op_type = proto::OpType::Read;
+            local_row = access->m_localRow;
+        }
+        if (access->m_type == MOT::WR){
+            op_type = proto::OpType::Update;
+            local_row = access->m_localRow;
+        }
+        else if (access->m_type == MOT::INS){
+            op_type = proto::OpType::Insert;
+            local_row = access->m_localInsertRow;
+        }
+        else if (access->m_type == MOT::DEL){
+            op_type = proto::OpType::Delete;
+            local_row = access->m_localRow;
+        }
+        if(local_row == nullptr || local_row->GetTable() == nullptr){
+            return false;
+        }
+        key = local_row->GetTable()->BuildKeyByRow(local_row, txMan, buf);
+        if (key == nullptr) {
+            return false;
+        }
+        row->set_key(std::move(std::string(key->GetKeyBuf(), key->GetKeyBuf() + key->GetKeyLength() )));
+        row->set_tablename(local_row->GetTable()->GetLongTableName());
+        if(op_type != proto::OpType::Read) {
+            row->set_data(local_row->GetData(), local_row->GetTable()->GetTupleSize());
+        }
+        row->set_type(op_type);
+    }
+    txn->set_client_ip(kLocalIp);
+    txn->set_client_txn_id(local_csn.fetch_add(1));
+    
+    MOT::TxnManager* txnMan_ptr = nullptr;
+    mutex_map.insert(txn->client_txn_id(), this, &txnMan_ptr);
+    if(txnMan_ptr != nullptr && txnMan_ptr->commit_state == 0) { //抢占了别人的 hash map 出现冲突
+        txnMan_ptr->commit_state = 1;
+        txnMan_ptr->cv.notify_all();
+    }
+
+    auto* serialized_txn_str_ptr = Gzip(std::move(msg));
+    client_send_message_queue.enqueue(std::move(std::make_unique<pack_params>(serialized_txn_str_ptr, 0, 0));
+    client_send_message_queue.enqueue(std::move(std::make_unique<pack_params>(nullptr, 0, 0));
+    return true;
+}
+
+
+
+
+void ClientSendThreadMain(uint64_t id) {
+    std::unique_ptr<send_thread_params> params;
+    std::unique_ptr<zmq::message_t> msg;
+    while(client_init_ok_flag.load() == false) usleep(200);
+    while(true) {
+        client_send_message_queue.wait_dequeue(params);
+        if(params != nullptr && params->merge_request_ptr != nullptr) {
+            msg = std::make_unique<zmq::message_t>(static_cast<void*>(const_cast<char*>(params->merge_request_ptr->data())),
+                    params->merge_request_ptr->size(), string_free, static_cast<void*>(params->merge_request_ptr));
+            client_send_socket->send(*(msg));
+        }
+    }
+}
+
+void ClientListenThreadMain(uint64_t id) {
+    while(client_init_ok_flag.load() == false) usleep(200);
+    while(true) {
+        std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
+        socket_listen.recv(&(*message_ptr));
+        client_listen_message_queue.enqueue(std::move(message_ptr));
+        client_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()))
+    }
+}
+
+void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn node/ Storage Node
+    std::unique_ptr<zmq::message_t> message_ptr;
+    std::unique_ptr<std::string> message_string_ptr;
+    while(true) {
+        client_listen_message_queue.wait_dequeue(message_ptr);
+        if(message_ptr != nullptr && message_ptr->size() > 0) {
+            auto msg_ptr = std::make_unique<merge::Message>();
+            auto message_string_ptr = std::make_unique<std::string>(static_cast<const char*>(message_ptr->data()), message_ptr->size());
+            google::protobuf::io::ArrayInputStream inputStream(message_string_ptr->data(), message_string_ptr->size());
+            google::protobuf::io::GzipInputStream gzipStream(&inputStream);
+            msg_ptr->ParseFromZeroCopyStream(&gzipStream);
+            if(msg_ptr->type_case() == proto::Message::TypeCase::kReplyTxnResultToClient) {
+                //wake up local thread and return the commit result
+            }
+            else if(msg_ptr->type_case() == proto::Message::TypeCase::kClientReadResponse) {
+                //wake up local thread and return the read result
+            }
+            else {
+                client_other_message_queue.enqueue(std::move(msg_ptr));
+                client_other_message_queue.enqueue(std::move(std::make_unique<merge::Message>()));
+            }
+        }
+    }
+} 
+
+void ClientInit() {
+    //Client send
+    client_send_context = std::make_shared<zme::context_t>(1);
+    client_send_socket = std::make_shared<zme::socket_t>(*client_send_context, ZMQ_PUSH);
+    client_send_socket->connect("tcp://" + kServerIp[0] + ":5551"); 
+    
+    //Client listen
+    int queue_length = 0;
+    client_listen_context = std::make_shared<zme::context_t>(1);
+    client_listen_socket = std::make_shared<zme::socket_t>(*client_listen_context, ZMQ_PULL);
+    client_listen_socket->setsockopt(ZMQ_SUBSCRIBE, "", 0);
+    client_listen_socket->setsockopt(ZMQ_RCVHWM, &queue_length, sizeof(queue_length));
+    client_listen_socket->bind("tcp://*:5552");
+
+}
+
+void ClientManagerThreadMain(uint64_t) { //handle other status
+    ClientInit();
+    client_init_ok_flag.store(true);
+    auto msg_ptr = std::make_unique<merge::Message>();
+    while(true) {
+        client_other_message_queue.wait_dequeue(msg_ptr);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//**************************************************************************************************************************************************************************************************
+//*****                                                                                                                                                                                        *****
+//*****                                                                                                                                                                                        ***** 
+//*****                                                                                      TAAS    Storage                                                                                   *****
+//*****                                                                                                                                                                                        ***** 
+//*****                                                                                                                                                                                        ***** 
+//**************************************************************************************************************************************************************************************************
+
+BlockingConcurrentQueue<std::unique_ptr<zmq::message_t>> storage_listen_message_queue;
+BlockingConcurrentQueue<std::unique_ptr<send_thread_params>> storage_send_message_queue;
+BlockingConcurrentQueue<std::unique_ptr<proto::Message>> storage_other_message_queue;
+BlockingConcurrentQueue<std::unique_ptr<proto::Message>> storage_read_queue;
+BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>> storage_update_queue;
+
+std::unique_ptr<std::mutex> storage_send_mutex, storage_listen_mutex;
+std::shared_ptr<zmq::context_t> storage_send_context, storage_listen_context;
+std::shared_ptr<zmq::socket_t> storage_send_socket, storage_listen_socket;
+
+std::atomic<bool> storage_init_ok_flag(false);
+std::atomic<uint64_t> update_epoch(0), current_epoch(0), shoule_update_txn_num(0), updated_txn_num(0);
+uint64_t start_time_ll;
+struct timeval start_time;
+
+void StorageSendThreadMain(uint64_t id) {
+    std::unique_ptr<send_thread_params> params;
+    std::unique_ptr<zmq::message_t> msg;
+    while(storage_init_ok_flag.load() == false) usleep(200);
+    while(true) {
+        storage_send_message_queue.wait_dequeue(params);
+        if(params != nullptr && params->merge_request_ptr != nullptr) {
+            msg = std::make_unique<zmq::message_t>(static_cast<void*>(const_cast<char*>(params->merge_request_ptr->data())),
+                    params->merge_request_ptr->size(), string_free, static_cast<void*>(params->merge_request_ptr));
+            storage_send_socket->send(*(msg));
+        }
+    }
+}
+
+void StorageListenThreadMain(uint64_t id) {
+    while(storage_init_ok_flag.load() == false) usleep(200);
+    while(true) {
+        std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
+        socket_listen.recv(&(*message_ptr));
+        storage_listen_message_queue.enqueue(std::move(message_ptr));
+        storage_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()))
+    }
+}
+
+void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from Txn node/ Storage Node
+    std::unique_ptr<zmq::message_t> message_ptr;
+    std::unique_ptr<std::string> message_string_ptr;
+    auto txn = std::make_unique<proto::Transaction>();
+    while(true) {
+        storage_listen_message_queue.wait_dequeue(message_ptr);
+        if(message_ptr != nullptr && message_ptr->size() > 0) {
+            auto msg_ptr = std::make_unique<proto::Message>();
+            auto message_string_ptr = std::make_unique<std::string>(static_cast<const char*>(message_ptr->data()), message_ptr->size());
+            google::protobuf::io::ArrayInputStream inputStream(message_string_ptr->data(), message_string_ptr->size());
+            google::protobuf::io::GzipInputStream gzipStream(&inputStream);
+            msg_ptr->ParseFromZeroCopyStream(&gzipStream);
+
+            if(msg_ptr->type_case() == proto::Message::TypeCase::kStoragePullResponse) {
+                //handle the log and update it in mot
+                auto& response = msg_ptr->storage_pull_response();
+                if(response.result() == proto::Result::Fail) {
+                    //Send pull request to another server or wait a few seconds
+                    continue;
+                } 
+                if(response.epoch_id() != update_epoch.load()) {
+                    //cache
+                    continue;
+                }
+                shoule_update_txn_num.store(response.txn_num());
+                for(int i = 0; i < (int) response.txns_size(); i ++) {
+                    txn = std::make_unique<proto::Transaction>(std::move(*(response.txns(i).release_txn())));
+                    storage_update_queue.enqueue(std::move(txn));
+                }
+                storage_update_queue.enqueue(nullptr);
+            }
+            else if(msg_ptr->type_case() == proto::Message::TypeCase::kClientReadRequest) {
+                //handle the read request
+                storage_read_queue.enqueue(std::move(msg_ptr));
+            }
+            else {
+                storage_other_message_queue.enqueue(std::move(msg_ptr));
+                storage_other_message_queue.enqueue(std::move(std::make_unique<merge::Message>()));
+            }
+        }
+    }
+} 
+
+void StorageUpdaterThreadMain(uint64_t id) {
+    auto txn_ptr = std::make_unique<proto::Transaction>();
+    while(true) {
+        storage_read_queue.wait_dequeue(txn_ptr);
+        //handle txn read request
+        if(txn_ptr != nullptr) {
+            
+            updated_txn_num.fetch_add(1);
+        }
+    }
+}
+
+void StorageReaderThreadMain(uint64_t id) {
+    auto msg_ptr = std::make_unique<proto::Message>();
+    while(true) {
+        storage_read_queue.wait_dequeue(msg_ptr);
+        //handle client read request
+
+        //send client read response
+    }
+}
+
+void StorageInit() {
+    //storage send
+    storage_send_context = std::make_shared<zme::context_t>(1);
+    storage_send_socket = std::make_shared<zme::socket_t>(*storage_send_context, ZMQ_PUSH);
+    storage_send_socket->connect("tcp://" + kServerIp[0] + ":5553"); 
+    
+    //storage listen
+    int queue_length = 0;
+    storage_listen_context = std::make_shared<zme::context_t>(1);
+    storage_listen_socket = std::make_shared<zme::socket_t>(*storage_listen_context, ZMQ_PULL);
+    storage_listen_socket->setsockopt(ZMQ_SUBSCRIBE, "", 0);
+    storage_listen_socket->setsockopt(ZMQ_RCVHWM, &queue_length, sizeof(queue_length));
+    storage_listen_socket->bind("tcp://*:5554");
+
+}
+
+uint64_t GetSleeptime(){
+    uint64_t sleep_time;
+    struct timeval current_time;
+    uint64_t current_time_ll;
+    gettimeofday(&current_time, NULL);
+    current_time_ll = current_time.tv_sec * 1000000 + current_time.tv_usec;
+    sleep_time = current_time_ll - (start_time_ll + (long)(current_epoch.load() - start_physical_epoch) * kSleepTime);
+    if(sleep_time >= kSleepTime){
+        MOT_LOG_INFO("start time : %llu, current time : %llu, 差值 %llu ,sleep time : %d", start_time_ll, current_time_ll, sleep_time, 0);
+        return 0;
+    }
+    else{
+        // MOT_LOG_INFO("start time : %llu, current time : %llu, 差值 %llu, sleep time : %llu", start_time_ll, current_time_ll, sleep_time, ksleeptime - sleep_time);
+        return kSleepTime - sleep_time;
+    } 
+}
+
+void StorageManagerThreadMain(uint64_t id) { //handle other status
+    StorageInit();
+    storage_init_ok_flag.store(true);
+    auto msg_ptr = std::make_unique<merge::Message>();
+
+    zmq::message_t message;
+    zmq::context_t context(1);
+    zmq::socket_t request_puller(context, ZMQ_PULL);
+    request_puller.bind("tcp://*:5546");
+    MOT_LOG_INFO("Storage 等待接受同步消息");
+    request_puller.recv(&message);
+    uint64_t sleep_time = static_cast<uint64_t>((((start_time.tv_sec / 60) + 1) * 60) * 1000000);
+    usleep(sleep_time - start_time_ll);
+    gettimeofday(&start_time, NULL);
+    start_time_ll = start_time.tv_sec * 1000000 + start_time.tv_usec;
+
+    while(true) {
+        usleep(10000);
+    }
 }

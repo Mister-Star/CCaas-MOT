@@ -571,6 +571,9 @@ public:
 
     /** @var holds query states from MOTAdaptor */
     std::unordered_map<uint64_t, uint64_t> m_queryState;
+    //ADDBY TAAS
+    RC commit_state;
+    std::condition_variable cv;
 };
 }  // namespace MOT
 

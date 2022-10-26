@@ -266,12 +266,14 @@ void CkeckEpochThreadsI();
 void GetServerInfo();
 
 //ADDBY TAAS
+std::vector<std::string> kTxnNodeIp, kStorageNodeIp;
+std::string kLocalIp;
 uint64_t kStorageUpdaterThreadNum = 10, kStorageReaderThreadNum = 10;
-
-
 
 void GenerateClientThreads();
 void GenerateStorageThreads();
+void TaasGetServerInfo();
+
 
 extern void auto_explain_init(void);
 extern int S3_init();
@@ -5062,7 +5064,8 @@ static void reaper(SIGNAL_ARGS)
             ereport(LOG,(errmsg("============================Reaper=================================")));
             GenerateEpochThreads();
             ereport(LOG,(errmsg("============================Reaper=================================")));
-            //ADDBY TAAS
+            //ADDBY TAAS creat threads
+            GetServerInfo();
             ereport(LOG,(errmsg("============================TAAS Reaper=================================")));
             GenerateClientThreads();
             ereport(LOG,(errmsg("============================TAAS Reaper=================================")));
@@ -11663,7 +11666,6 @@ void CkeckEpochThreadsI(){
 
 }
 
-
 void GetServerInfo(){
     tinyxml2::XMLDocument doc;  
     doc.LoadFile("/tmp/ServerInfo.xml");  
@@ -11888,9 +11890,9 @@ void GetServerInfo(){
 
 
 
+
 //ADDBY TAAS
 void GenerateClientThreads(){
-    GetServerInfo();
     g_instance.pid_cxt.ClientSenderPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
     if (g_instance.pid_cxt.ClientSenderPIDS == NULL) {
         ereport(FATAL, (errmsg("communicator palloc ClientSenderPIDS mempry failed")));
@@ -11921,7 +11923,6 @@ void GenerateClientThreads(){
 }
 
 void GenerateStorageThreads(){
-    GetServerInfo();
     g_instance.pid_cxt.StorageSenderPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
     if (g_instance.pid_cxt.StorageSenderPIDS == NULL) {
         ereport(FATAL, (errmsg("communicator palloc StorageSenderPIDS mempry failed")));
@@ -11976,4 +11977,76 @@ void GenerateStorageThreads(){
         epoch_commit_thread_ids.push_back(g_instance.pid_cxt.StorageUpdaterPIDS[i]);
     }
 
+}
+
+void TaasGetServerInfo(){
+    tinyxml2::XMLDocument doc;  
+    doc.LoadFile("/tmp/TaasServerInfo.xml");
+    tinyxml2::XMLElement *root=doc.RootElement();  
+    tinyxml2::XMLElement *index_element=root->FirstChildElement("txn_node_ip");  
+	int symbol_local_or_remote=0;
+    while (index_element){
+        tinyxml2::XMLElement *ip_port=index_element->FirstChildElement("ip");
+        const char* content;
+
+        while(ip_port){
+
+            content=ip_port->GetText();
+            std::string temp(content);
+            kTxnNodeIp.push_back(temp);
+            ip_port=ip_port->NextSiblingElement();
+
+        }
+        index_element=index_element->NextSiblingElement();
+        symbol_local_or_remote++;
+    }
+
+    index_element=root->FirstChildElement("txn_node_ip");
+    symbol_local_or_remote = 0;
+    while (index_element){
+        tinyxml2::XMLElement *ip_port=index_element->FirstChildElement("cache_ip");
+        const char* content;
+        while(ip_port){
+            content=ip_port->GetText();
+            std::string temp(content);
+            kStorageNodeIp.push_back(temp);
+            ip_port=ip_port->NextSiblingElement();
+
+        }
+        index_element=index_element->NextSiblingElement();
+        symbol_local_or_remote++;
+    }
+
+    tinyxml2::XMLElement* server_num = root->FirstChildElement("server_num");
+    kServerNum= std::stoull(server_num->GetText());
+
+    tinyxml2::XMLElement* local_ip_index_xml = root->FirstChildElement("local_ip_index");
+    local_ip_index=std::stoull(local_ip_index_xml->GetText());
+
+    tinyxml2::XMLElement* sleep_time = root->FirstChildElement("sleep_time");
+    kSleepTime= std::stoull(sleep_time->GetText());
+
+    tinyxml2::XMLElement* master_ip = root->FirstChildElement("master_ip");
+    std::string temp1(master_ip->GetText());
+    kMasterIp = temp1;
+
+    tinyxml2::XMLElement* private_ip = root->FirstChildElement("private_ip");
+    std::string temp2(private_ip->GetText());
+    kPrivateIp = temp2;
+
+    tinyxml2::XMLElement* local_ip = root->FirstChildElement("local_ip");
+    std::string temp3(local_ip->GetText());
+    kLocalIp = temp3;
+
+    ereport(LOG, (errmsg("========================================================")));
+    for(int i = 0; i < (int)kServerNum; i++ ){
+        ereport(LOG, (errmsg("ip: %s",kServerIp[i].c_str())));
+    }
+    ereport(LOG, (errmsg("server_num %d", (int)kServerNum)));
+    ereport(LOG, (errmsg("local_ip_index %d", (int)local_ip_index)));
+    ereport(LOG, (errmsg("sleep_time %d", (int)kSleepTime)));
+    ereport(LOG, (errmsg("master_ip %s", kMasterIp.c_str())));
+    ereport(LOG, (errmsg("master_ip %s", kPrivateIp.c_str())));
+    ereport(LOG, (errmsg("master_ip %s", kLocalIp.c_str())));
+    ereport(LOG, (errmsg("========================================================")));
 }

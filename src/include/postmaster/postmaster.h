@@ -32,6 +32,11 @@ extern volatile bool is_stable_epoch_send, is_epoch_advanced_by_message, is_read
     is_breakdown, is_cache_server_available, is_fault_tolerance_enable, is_protobuf_gzip, is_total_pack, is_sync_exec, is_limite_txn,
     is_full_async_exec, is_raft_enable, is_remote_cache_server_enable;
 
+//ADDBY TAAS
+extern std::vector<std::string> kTxnNodeIp, kStorageNodeIp;
+extern std::string kLocalIp;
+extern uint64_t kStorageUpdaterThreadNum, kStorageReaderThreadNum;
+
 extern THR_LOCAL bool comm_client_bind;
 
 extern bool FencedUDFMasterMode;

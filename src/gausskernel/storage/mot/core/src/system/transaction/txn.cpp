@@ -280,7 +280,18 @@ void TxnManager::CommitInternal()
 
 RC TxnManager::ValidateCommit()
 {
-    return m_occManager.ValidateOcc(this);
+    // return m_occManager.ValidateOcc(this);
+    //ADDBY TAAS
+    MOTAdaptor::InsertTxntoLocalChangeSet(this);
+    std::mutex mutex;
+    std::unique_lock lock(mutex);
+    cv.wait_until(lock, [](){commit_state != 0});
+    if(commit_state == 1) {
+        return RC::RC_ABORT;
+    }
+    else {
+        return RC::RC_OK;
+    }
 }
 
 void TxnManager::RecordCommit()

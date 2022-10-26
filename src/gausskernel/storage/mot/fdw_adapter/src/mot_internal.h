@@ -177,6 +177,9 @@ struct MOTFdwState_St {
 
 class MOTAdaptor {
 public:
+//ADDBY TAAS
+    bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan);
+
     static void Init();
     static void Destroy();
     static void NotifyConfigChange();

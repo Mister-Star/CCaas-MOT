@@ -43,9 +43,9 @@ OBJ_DIR = ../obj
 # DATA = mot_fdw.control mot_fdw--1.0.sql
 
 # DEPS := $(OBJ_DIR)/mot_fdw.d $(OBJ_DIR)/mot_internal.d $(OBJ_DIR)/mot_fdx_xlog.d $(OBJ_DIR)/mot_match_index.d $(OBJ_DIR)/mot_fdw_error.d $(OBJ_DIR)/message.pb.d
-OBJS = mot_internal.o mot_fdw.o mot_fdw_xlog.o mot_match_index.o mot_fdw_error.o message.pb.o
+OBJS = mot_internal.o mot_fdw.o mot_fdw_xlog.o mot_match_index.o mot_fdw_error.o message.pb.o client.pb.o storage.pb.o server.pb.o transaction.pb.o
 DATA = mot_fdw.control mot_fdw--1.0.sql
-DEPS := mot_fdw.d mot_internal.d mot_fdx_xlog.d mot_match_index.d mot_fdw_error.d message.pb.d
+DEPS := mot_fdw.d mot_internal.d mot_fdx_xlog.d mot_match_index.d mot_fdw_error.d message.pb.d client.pb.d storage.pb.d server.pb.d transaction.pb.d
 # Shared library stuff
 include $(top_srcdir)/src/gausskernel/common.mk
 override CXXFLAGS += -DMOT_SECURE -I$(top_builddir)/src/gausskernel/storage/mot/jit_exec/src -I$(top_builddir)/src/gausskernel/storage/mot/fdw_adapter/src -I$(ENGINE_INC) -I$(ENGINE_INC)/storage -I$(ENGINE_INC)/system -I$(ENGINE_INC)/memory -I$(ENGINE_INC)/memory/garbage_collector
