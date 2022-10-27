@@ -14,6 +14,7 @@
 #include <google/protobuf/wire_format.h>
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
+extern PROTOBUF_INTERNAL_EXPORT_proto_2fnode_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_Node_proto_2fnode_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_proto_2ftransaction_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_Transaction_proto_2ftransaction_2eproto;
 namespace proto {
 class StoragePullRequestDefaultTypeInternal {
@@ -36,8 +37,9 @@ static void InitDefaultsscc_info_StoragePullRequest_proto_2fstorage_2eproto() {
   ::proto::StoragePullRequest::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_StoragePullRequest_proto_2fstorage_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_StoragePullRequest_proto_2fstorage_2eproto}, {}};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_StoragePullRequest_proto_2fstorage_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_StoragePullRequest_proto_2fstorage_2eproto}, {
+      &scc_info_Node_proto_2fnode_2eproto.base,}};
 
 static void InitDefaultsscc_info_StoragePullResponse_proto_2fstorage_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -50,9 +52,10 @@ static void InitDefaultsscc_info_StoragePullResponse_proto_2fstorage_2eproto() {
   ::proto::StoragePullResponse::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_StoragePullResponse_proto_2fstorage_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_StoragePullResponse_proto_2fstorage_2eproto}, {
-      &scc_info_Transaction_proto_2ftransaction_2eproto.base,}};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_StoragePullResponse_proto_2fstorage_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 2, 0, InitDefaultsscc_info_StoragePullResponse_proto_2fstorage_2eproto}, {
+      &scc_info_Transaction_proto_2ftransaction_2eproto.base,
+      &scc_info_Node_proto_2fnode_2eproto.base,}};
 
 static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_proto_2fstorage_2eproto[2];
 static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_proto_2fstorage_2eproto = nullptr;
@@ -64,8 +67,9 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_proto_2fstorage_2eproto::offse
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::proto::StoragePullRequest, storage_ip_),
   PROTOBUF_FIELD_OFFSET(::proto::StoragePullRequest, epoch_id_),
+  PROTOBUF_FIELD_OFFSET(::proto::StoragePullRequest, send_node_),
+  PROTOBUF_FIELD_OFFSET(::proto::StoragePullRequest, recv_node_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::proto::StoragePullResponse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -75,10 +79,12 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_proto_2fstorage_2eproto::offse
   PROTOBUF_FIELD_OFFSET(::proto::StoragePullResponse, epoch_id_),
   PROTOBUF_FIELD_OFFSET(::proto::StoragePullResponse, txn_num_),
   PROTOBUF_FIELD_OFFSET(::proto::StoragePullResponse, txns_),
+  PROTOBUF_FIELD_OFFSET(::proto::StoragePullResponse, send_node_),
+  PROTOBUF_FIELD_OFFSET(::proto::StoragePullResponse, recv_node_),
 };
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::proto::StoragePullRequest)},
-  { 7, -1, sizeof(::proto::StoragePullResponse)},
+  { 8, -1, sizeof(::proto::StoragePullResponse)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -88,14 +94,18 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 
 const char descriptor_table_protodef_proto_2fstorage_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\023proto/storage.proto\022\005proto\032\027proto/tran"
-  "saction.proto\":\n\022StoragePullRequest\022\022\n\ns"
-  "torage_ip\030\001 \001(\t\022\020\n\010epoch_id\030\002 \001(\004\"y\n\023Sto"
-  "ragePullResponse\022\035\n\006result\030\001 \001(\0162\r.proto"
-  ".Result\022\020\n\010epoch_id\030\002 \001(\004\022\017\n\007txn_num\030\003 \001"
-  "(\004\022 \n\004txns\030\004 \003(\0132\022.proto.Transactionb\006pr"
-  "oto3"
+  "saction.proto\032\020proto/node.proto\"f\n\022Stora"
+  "gePullRequest\022\020\n\010epoch_id\030\001 \001(\004\022\036\n\tsend_"
+  "node\030\002 \001(\0132\013.proto.Node\022\036\n\trecv_node\030\003 \001"
+  "(\0132\013.proto.Node\"\271\001\n\023StoragePullResponse\022"
+  "\035\n\006result\030\001 \001(\0162\r.proto.Result\022\020\n\010epoch_"
+  "id\030\002 \001(\004\022\017\n\007txn_num\030\003 \001(\004\022 \n\004txns\030\004 \003(\0132"
+  "\022.proto.Transaction\022\036\n\tsend_node\030\005 \001(\0132\013"
+  ".proto.Node\022\036\n\trecv_node\030\006 \001(\0132\013.proto.N"
+  "odeb\006proto3"
   ;
-static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_proto_2fstorage_2eproto_deps[1] = {
+static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_proto_2fstorage_2eproto_deps[2] = {
+  &::descriptor_table_proto_2fnode_2eproto,
   &::descriptor_table_proto_2ftransaction_2eproto,
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_proto_2fstorage_2eproto_sccs[2] = {
@@ -105,8 +115,8 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_pro
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_proto_2fstorage_2eproto_once;
 static bool descriptor_table_proto_2fstorage_2eproto_initialized = false;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_proto_2fstorage_2eproto = {
-  &descriptor_table_proto_2fstorage_2eproto_initialized, descriptor_table_protodef_proto_2fstorage_2eproto, "proto/storage.proto", 244,
-  &descriptor_table_proto_2fstorage_2eproto_once, descriptor_table_proto_2fstorage_2eproto_sccs, descriptor_table_proto_2fstorage_2eproto_deps, 2, 1,
+  &descriptor_table_proto_2fstorage_2eproto_initialized, descriptor_table_protodef_proto_2fstorage_2eproto, "proto/storage.proto", 371,
+  &descriptor_table_proto_2fstorage_2eproto_once, descriptor_table_proto_2fstorage_2eproto_sccs, descriptor_table_proto_2fstorage_2eproto_deps, 2, 2,
   schemas, file_default_instances, TableStruct_proto_2fstorage_2eproto::offsets,
   file_level_metadata_proto_2fstorage_2eproto, 2, file_level_enum_descriptors_proto_2fstorage_2eproto, file_level_service_descriptors_proto_2fstorage_2eproto,
 };
@@ -118,11 +128,37 @@ namespace proto {
 // ===================================================================
 
 void StoragePullRequest::InitAsDefaultInstance() {
+  ::proto::_StoragePullRequest_default_instance_._instance.get_mutable()->send_node_ = const_cast< ::proto::Node*>(
+      ::proto::Node::internal_default_instance());
+  ::proto::_StoragePullRequest_default_instance_._instance.get_mutable()->recv_node_ = const_cast< ::proto::Node*>(
+      ::proto::Node::internal_default_instance());
 }
 class StoragePullRequest::_Internal {
  public:
+  static const ::proto::Node& send_node(const StoragePullRequest* msg);
+  static const ::proto::Node& recv_node(const StoragePullRequest* msg);
 };
 
+const ::proto::Node&
+StoragePullRequest::_Internal::send_node(const StoragePullRequest* msg) {
+  return *msg->send_node_;
+}
+const ::proto::Node&
+StoragePullRequest::_Internal::recv_node(const StoragePullRequest* msg) {
+  return *msg->recv_node_;
+}
+void StoragePullRequest::clear_send_node() {
+  if (GetArenaNoVirtual() == nullptr && send_node_ != nullptr) {
+    delete send_node_;
+  }
+  send_node_ = nullptr;
+}
+void StoragePullRequest::clear_recv_node() {
+  if (GetArenaNoVirtual() == nullptr && recv_node_ != nullptr) {
+    delete recv_node_;
+  }
+  recv_node_ = nullptr;
+}
 StoragePullRequest::StoragePullRequest()
   : ::PROTOBUF_NAMESPACE_ID::Message(), _internal_metadata_(nullptr) {
   SharedCtor();
@@ -132,9 +168,15 @@ StoragePullRequest::StoragePullRequest(const StoragePullRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message(),
       _internal_metadata_(nullptr) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
-  storage_ip_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_storage_ip().empty()) {
-    storage_ip_.AssignWithDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from.storage_ip_);
+  if (from._internal_has_send_node()) {
+    send_node_ = new ::proto::Node(*from.send_node_);
+  } else {
+    send_node_ = nullptr;
+  }
+  if (from._internal_has_recv_node()) {
+    recv_node_ = new ::proto::Node(*from.recv_node_);
+  } else {
+    recv_node_ = nullptr;
   }
   epoch_id_ = from.epoch_id_;
   // @@protoc_insertion_point(copy_constructor:proto.StoragePullRequest)
@@ -142,8 +184,9 @@ StoragePullRequest::StoragePullRequest(const StoragePullRequest& from)
 
 void StoragePullRequest::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_StoragePullRequest_proto_2fstorage_2eproto.base);
-  storage_ip_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  epoch_id_ = PROTOBUF_ULONGLONG(0);
+  ::memset(&send_node_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&epoch_id_) -
+      reinterpret_cast<char*>(&send_node_)) + sizeof(epoch_id_));
 }
 
 StoragePullRequest::~StoragePullRequest() {
@@ -152,7 +195,8 @@ StoragePullRequest::~StoragePullRequest() {
 }
 
 void StoragePullRequest::SharedDtor() {
-  storage_ip_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete send_node_;
+  if (this != internal_default_instance()) delete recv_node_;
 }
 
 void StoragePullRequest::SetCachedSize(int size) const {
@@ -170,7 +214,14 @@ void StoragePullRequest::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  storage_ip_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (GetArenaNoVirtual() == nullptr && send_node_ != nullptr) {
+    delete send_node_;
+  }
+  send_node_ = nullptr;
+  if (GetArenaNoVirtual() == nullptr && recv_node_ != nullptr) {
+    delete recv_node_;
+  }
+  recv_node_ = nullptr;
   epoch_id_ = PROTOBUF_ULONGLONG(0);
   _internal_metadata_.Clear();
 }
@@ -182,19 +233,24 @@ const char* StoragePullRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMES
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // string storage_ip = 1;
+      // uint64 epoch_id = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
-          auto str = _internal_mutable_storage_ip();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "proto.StoragePullRequest.storage_ip"));
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
+          epoch_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint64 epoch_id = 2;
+      // .proto.Node send_node = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16)) {
-          epoch_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_send_node(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .proto.Node recv_node = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
+          ptr = ctx->ParseMessage(_internal_mutable_recv_node(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -224,20 +280,26 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // string storage_ip = 1;
-  if (this->storage_ip().size() > 0) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_storage_ip().data(), static_cast<int>(this->_internal_storage_ip().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "proto.StoragePullRequest.storage_ip");
-    target = stream->WriteStringMaybeAliased(
-        1, this->_internal_storage_ip(), target);
-  }
-
-  // uint64 epoch_id = 2;
+  // uint64 epoch_id = 1;
   if (this->epoch_id() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(2, this->_internal_epoch_id(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_epoch_id(), target);
+  }
+
+  // .proto.Node send_node = 2;
+  if (this->has_send_node()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        2, _Internal::send_node(this), target, stream);
+  }
+
+  // .proto.Node recv_node = 3;
+  if (this->has_recv_node()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        3, _Internal::recv_node(this), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -256,14 +318,21 @@ size_t StoragePullRequest::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // string storage_ip = 1;
-  if (this->storage_ip().size() > 0) {
+  // .proto.Node send_node = 2;
+  if (this->has_send_node()) {
     total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_storage_ip());
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *send_node_);
   }
 
-  // uint64 epoch_id = 2;
+  // .proto.Node recv_node = 3;
+  if (this->has_recv_node()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *recv_node_);
+  }
+
+  // uint64 epoch_id = 1;
   if (this->epoch_id() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
@@ -301,9 +370,11 @@ void StoragePullRequest::MergeFrom(const StoragePullRequest& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.storage_ip().size() > 0) {
-
-    storage_ip_.AssignWithDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from.storage_ip_);
+  if (from.has_send_node()) {
+    _internal_mutable_send_node()->::proto::Node::MergeFrom(from._internal_send_node());
+  }
+  if (from.has_recv_node()) {
+    _internal_mutable_recv_node()->::proto::Node::MergeFrom(from._internal_recv_node());
   }
   if (from.epoch_id() != 0) {
     _internal_set_epoch_id(from._internal_epoch_id());
@@ -331,8 +402,8 @@ bool StoragePullRequest::IsInitialized() const {
 void StoragePullRequest::InternalSwap(StoragePullRequest* other) {
   using std::swap;
   _internal_metadata_.Swap(&other->_internal_metadata_);
-  storage_ip_.Swap(&other->storage_ip_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-    GetArenaNoVirtual());
+  swap(send_node_, other->send_node_);
+  swap(recv_node_, other->recv_node_);
   swap(epoch_id_, other->epoch_id_);
 }
 
@@ -344,13 +415,39 @@ void StoragePullRequest::InternalSwap(StoragePullRequest* other) {
 // ===================================================================
 
 void StoragePullResponse::InitAsDefaultInstance() {
+  ::proto::_StoragePullResponse_default_instance_._instance.get_mutable()->send_node_ = const_cast< ::proto::Node*>(
+      ::proto::Node::internal_default_instance());
+  ::proto::_StoragePullResponse_default_instance_._instance.get_mutable()->recv_node_ = const_cast< ::proto::Node*>(
+      ::proto::Node::internal_default_instance());
 }
 class StoragePullResponse::_Internal {
  public:
+  static const ::proto::Node& send_node(const StoragePullResponse* msg);
+  static const ::proto::Node& recv_node(const StoragePullResponse* msg);
 };
 
+const ::proto::Node&
+StoragePullResponse::_Internal::send_node(const StoragePullResponse* msg) {
+  return *msg->send_node_;
+}
+const ::proto::Node&
+StoragePullResponse::_Internal::recv_node(const StoragePullResponse* msg) {
+  return *msg->recv_node_;
+}
 void StoragePullResponse::clear_txns() {
   txns_.Clear();
+}
+void StoragePullResponse::clear_send_node() {
+  if (GetArenaNoVirtual() == nullptr && send_node_ != nullptr) {
+    delete send_node_;
+  }
+  send_node_ = nullptr;
+}
+void StoragePullResponse::clear_recv_node() {
+  if (GetArenaNoVirtual() == nullptr && recv_node_ != nullptr) {
+    delete recv_node_;
+  }
+  recv_node_ = nullptr;
 }
 StoragePullResponse::StoragePullResponse()
   : ::PROTOBUF_NAMESPACE_ID::Message(), _internal_metadata_(nullptr) {
@@ -362,6 +459,16 @@ StoragePullResponse::StoragePullResponse(const StoragePullResponse& from)
       _internal_metadata_(nullptr),
       txns_(from.txns_) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
+  if (from._internal_has_send_node()) {
+    send_node_ = new ::proto::Node(*from.send_node_);
+  } else {
+    send_node_ = nullptr;
+  }
+  if (from._internal_has_recv_node()) {
+    recv_node_ = new ::proto::Node(*from.recv_node_);
+  } else {
+    recv_node_ = nullptr;
+  }
   ::memcpy(&epoch_id_, &from.epoch_id_,
     static_cast<size_t>(reinterpret_cast<char*>(&result_) -
     reinterpret_cast<char*>(&epoch_id_)) + sizeof(result_));
@@ -370,9 +477,9 @@ StoragePullResponse::StoragePullResponse(const StoragePullResponse& from)
 
 void StoragePullResponse::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_StoragePullResponse_proto_2fstorage_2eproto.base);
-  ::memset(&epoch_id_, 0, static_cast<size_t>(
+  ::memset(&send_node_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&result_) -
-      reinterpret_cast<char*>(&epoch_id_)) + sizeof(result_));
+      reinterpret_cast<char*>(&send_node_)) + sizeof(result_));
 }
 
 StoragePullResponse::~StoragePullResponse() {
@@ -381,6 +488,8 @@ StoragePullResponse::~StoragePullResponse() {
 }
 
 void StoragePullResponse::SharedDtor() {
+  if (this != internal_default_instance()) delete send_node_;
+  if (this != internal_default_instance()) delete recv_node_;
 }
 
 void StoragePullResponse::SetCachedSize(int size) const {
@@ -399,6 +508,14 @@ void StoragePullResponse::Clear() {
   (void) cached_has_bits;
 
   txns_.Clear();
+  if (GetArenaNoVirtual() == nullptr && send_node_ != nullptr) {
+    delete send_node_;
+  }
+  send_node_ = nullptr;
+  if (GetArenaNoVirtual() == nullptr && recv_node_ != nullptr) {
+    delete recv_node_;
+  }
+  recv_node_ = nullptr;
   ::memset(&epoch_id_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&result_) -
       reinterpret_cast<char*>(&epoch_id_)) + sizeof(result_));
@@ -444,6 +561,20 @@ const char* StoragePullResponse::_InternalParse(const char* ptr, ::PROTOBUF_NAME
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<34>(ptr));
+        } else goto handle_unusual;
+        continue;
+      // .proto.Node send_node = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
+          ptr = ctx->ParseMessage(_internal_mutable_send_node(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .proto.Node recv_node = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 50)) {
+          ptr = ctx->ParseMessage(_internal_mutable_recv_node(), ptr);
+          CHK_(ptr);
         } else goto handle_unusual;
         continue;
       default: {
@@ -499,6 +630,22 @@ failure:
       InternalWriteMessage(4, this->_internal_txns(i), target, stream);
   }
 
+  // .proto.Node send_node = 5;
+  if (this->has_send_node()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        5, _Internal::send_node(this), target, stream);
+  }
+
+  // .proto.Node recv_node = 6;
+  if (this->has_recv_node()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        6, _Internal::recv_node(this), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields(), target, stream);
@@ -520,6 +667,20 @@ size_t StoragePullResponse::ByteSizeLong() const {
   for (const auto& msg : this->txns_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // .proto.Node send_node = 5;
+  if (this->has_send_node()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *send_node_);
+  }
+
+  // .proto.Node recv_node = 6;
+  if (this->has_recv_node()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *recv_node_);
   }
 
   // uint64 epoch_id = 2;
@@ -574,6 +735,12 @@ void StoragePullResponse::MergeFrom(const StoragePullResponse& from) {
   (void) cached_has_bits;
 
   txns_.MergeFrom(from.txns_);
+  if (from.has_send_node()) {
+    _internal_mutable_send_node()->::proto::Node::MergeFrom(from._internal_send_node());
+  }
+  if (from.has_recv_node()) {
+    _internal_mutable_recv_node()->::proto::Node::MergeFrom(from._internal_recv_node());
+  }
   if (from.epoch_id() != 0) {
     _internal_set_epoch_id(from._internal_epoch_id());
   }
@@ -607,6 +774,8 @@ void StoragePullResponse::InternalSwap(StoragePullResponse* other) {
   using std::swap;
   _internal_metadata_.Swap(&other->_internal_metadata_);
   txns_.InternalSwap(&other->txns_);
+  swap(send_node_, other->send_node_);
+  swap(recv_node_, other->recv_node_);
   swap(epoch_id_, other->epoch_id_);
   swap(txn_num_, other->txn_num_);
   swap(result_, other->result_);

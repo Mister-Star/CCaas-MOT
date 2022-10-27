@@ -33,6 +33,7 @@
 #include <google/protobuf/extension_set.h>  // IWYU pragma: export
 #include <google/protobuf/unknown_field_set.h>
 #include "proto/transaction.pb.h"
+#include "proto/node.pb.h"
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
 #define PROTOBUF_INTERNAL_EXPORT_proto_2fstorage_2eproto
@@ -177,26 +178,41 @@ class StoragePullRequest :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kStorageIpFieldNumber = 1,
-    kEpochIdFieldNumber = 2,
+    kSendNodeFieldNumber = 2,
+    kRecvNodeFieldNumber = 3,
+    kEpochIdFieldNumber = 1,
   };
-  // string storage_ip = 1;
-  void clear_storage_ip();
-  const std::string& storage_ip() const;
-  void set_storage_ip(const std::string& value);
-  void set_storage_ip(std::string&& value);
-  void set_storage_ip(const char* value);
-  void set_storage_ip(const char* value, size_t size);
-  std::string* mutable_storage_ip();
-  std::string* release_storage_ip();
-  void set_allocated_storage_ip(std::string* storage_ip);
+  // .proto.Node send_node = 2;
+  bool has_send_node() const;
   private:
-  const std::string& _internal_storage_ip() const;
-  void _internal_set_storage_ip(const std::string& value);
-  std::string* _internal_mutable_storage_ip();
+  bool _internal_has_send_node() const;
+  public:
+  void clear_send_node();
+  const ::proto::Node& send_node() const;
+  ::proto::Node* release_send_node();
+  ::proto::Node* mutable_send_node();
+  void set_allocated_send_node(::proto::Node* send_node);
+  private:
+  const ::proto::Node& _internal_send_node() const;
+  ::proto::Node* _internal_mutable_send_node();
   public:
 
-  // uint64 epoch_id = 2;
+  // .proto.Node recv_node = 3;
+  bool has_recv_node() const;
+  private:
+  bool _internal_has_recv_node() const;
+  public:
+  void clear_recv_node();
+  const ::proto::Node& recv_node() const;
+  ::proto::Node* release_recv_node();
+  ::proto::Node* mutable_recv_node();
+  void set_allocated_recv_node(::proto::Node* recv_node);
+  private:
+  const ::proto::Node& _internal_recv_node() const;
+  ::proto::Node* _internal_mutable_recv_node();
+  public:
+
+  // uint64 epoch_id = 1;
   void clear_epoch_id();
   ::PROTOBUF_NAMESPACE_ID::uint64 epoch_id() const;
   void set_epoch_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
@@ -210,7 +226,8 @@ class StoragePullRequest :
   class _Internal;
 
   ::PROTOBUF_NAMESPACE_ID::internal::InternalMetadataWithArena _internal_metadata_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr storage_ip_;
+  ::proto::Node* send_node_;
+  ::proto::Node* recv_node_;
   ::PROTOBUF_NAMESPACE_ID::uint64 epoch_id_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_proto_2fstorage_2eproto;
@@ -324,6 +341,8 @@ class StoragePullResponse :
 
   enum : int {
     kTxnsFieldNumber = 4,
+    kSendNodeFieldNumber = 5,
+    kRecvNodeFieldNumber = 6,
     kEpochIdFieldNumber = 2,
     kTxnNumFieldNumber = 3,
     kResultFieldNumber = 1,
@@ -345,6 +364,36 @@ class StoragePullResponse :
   ::proto::Transaction* add_txns();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::proto::Transaction >&
       txns() const;
+
+  // .proto.Node send_node = 5;
+  bool has_send_node() const;
+  private:
+  bool _internal_has_send_node() const;
+  public:
+  void clear_send_node();
+  const ::proto::Node& send_node() const;
+  ::proto::Node* release_send_node();
+  ::proto::Node* mutable_send_node();
+  void set_allocated_send_node(::proto::Node* send_node);
+  private:
+  const ::proto::Node& _internal_send_node() const;
+  ::proto::Node* _internal_mutable_send_node();
+  public:
+
+  // .proto.Node recv_node = 6;
+  bool has_recv_node() const;
+  private:
+  bool _internal_has_recv_node() const;
+  public:
+  void clear_recv_node();
+  const ::proto::Node& recv_node() const;
+  ::proto::Node* release_recv_node();
+  ::proto::Node* mutable_recv_node();
+  void set_allocated_recv_node(::proto::Node* recv_node);
+  private:
+  const ::proto::Node& _internal_recv_node() const;
+  ::proto::Node* _internal_mutable_recv_node();
+  public:
 
   // uint64 epoch_id = 2;
   void clear_epoch_id();
@@ -379,6 +428,8 @@ class StoragePullResponse :
 
   ::PROTOBUF_NAMESPACE_ID::internal::InternalMetadataWithArena _internal_metadata_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::proto::Transaction > txns_;
+  ::proto::Node* send_node_;
+  ::proto::Node* recv_node_;
   ::PROTOBUF_NAMESPACE_ID::uint64 epoch_id_;
   ::PROTOBUF_NAMESPACE_ID::uint64 txn_num_;
   int result_;
@@ -396,67 +447,7 @@ class StoragePullResponse :
 #endif  // __GNUC__
 // StoragePullRequest
 
-// string storage_ip = 1;
-inline void StoragePullRequest::clear_storage_ip() {
-  storage_ip_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-}
-inline const std::string& StoragePullRequest::storage_ip() const {
-  // @@protoc_insertion_point(field_get:proto.StoragePullRequest.storage_ip)
-  return _internal_storage_ip();
-}
-inline void StoragePullRequest::set_storage_ip(const std::string& value) {
-  _internal_set_storage_ip(value);
-  // @@protoc_insertion_point(field_set:proto.StoragePullRequest.storage_ip)
-}
-inline std::string* StoragePullRequest::mutable_storage_ip() {
-  // @@protoc_insertion_point(field_mutable:proto.StoragePullRequest.storage_ip)
-  return _internal_mutable_storage_ip();
-}
-inline const std::string& StoragePullRequest::_internal_storage_ip() const {
-  return storage_ip_.GetNoArena();
-}
-inline void StoragePullRequest::_internal_set_storage_ip(const std::string& value) {
-  
-  storage_ip_.SetNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value);
-}
-inline void StoragePullRequest::set_storage_ip(std::string&& value) {
-  
-  storage_ip_.SetNoArena(
-    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
-  // @@protoc_insertion_point(field_set_rvalue:proto.StoragePullRequest.storage_ip)
-}
-inline void StoragePullRequest::set_storage_ip(const char* value) {
-  GOOGLE_DCHECK(value != nullptr);
-  
-  storage_ip_.SetNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
-  // @@protoc_insertion_point(field_set_char:proto.StoragePullRequest.storage_ip)
-}
-inline void StoragePullRequest::set_storage_ip(const char* value, size_t size) {
-  
-  storage_ip_.SetNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-      ::std::string(reinterpret_cast<const char*>(value), size));
-  // @@protoc_insertion_point(field_set_pointer:proto.StoragePullRequest.storage_ip)
-}
-inline std::string* StoragePullRequest::_internal_mutable_storage_ip() {
-  
-  return storage_ip_.MutableNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-}
-inline std::string* StoragePullRequest::release_storage_ip() {
-  // @@protoc_insertion_point(field_release:proto.StoragePullRequest.storage_ip)
-  
-  return storage_ip_.ReleaseNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-}
-inline void StoragePullRequest::set_allocated_storage_ip(std::string* storage_ip) {
-  if (storage_ip != nullptr) {
-    
-  } else {
-    
-  }
-  storage_ip_.SetAllocatedNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), storage_ip);
-  // @@protoc_insertion_point(field_set_allocated:proto.StoragePullRequest.storage_ip)
-}
-
-// uint64 epoch_id = 2;
+// uint64 epoch_id = 1;
 inline void StoragePullRequest::clear_epoch_id() {
   epoch_id_ = PROTOBUF_ULONGLONG(0);
 }
@@ -474,6 +465,114 @@ inline void StoragePullRequest::_internal_set_epoch_id(::PROTOBUF_NAMESPACE_ID::
 inline void StoragePullRequest::set_epoch_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   _internal_set_epoch_id(value);
   // @@protoc_insertion_point(field_set:proto.StoragePullRequest.epoch_id)
+}
+
+// .proto.Node send_node = 2;
+inline bool StoragePullRequest::_internal_has_send_node() const {
+  return this != internal_default_instance() && send_node_ != nullptr;
+}
+inline bool StoragePullRequest::has_send_node() const {
+  return _internal_has_send_node();
+}
+inline const ::proto::Node& StoragePullRequest::_internal_send_node() const {
+  const ::proto::Node* p = send_node_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::proto::Node*>(
+      &::proto::_Node_default_instance_);
+}
+inline const ::proto::Node& StoragePullRequest::send_node() const {
+  // @@protoc_insertion_point(field_get:proto.StoragePullRequest.send_node)
+  return _internal_send_node();
+}
+inline ::proto::Node* StoragePullRequest::release_send_node() {
+  // @@protoc_insertion_point(field_release:proto.StoragePullRequest.send_node)
+  
+  ::proto::Node* temp = send_node_;
+  send_node_ = nullptr;
+  return temp;
+}
+inline ::proto::Node* StoragePullRequest::_internal_mutable_send_node() {
+  
+  if (send_node_ == nullptr) {
+    auto* p = CreateMaybeMessage<::proto::Node>(GetArenaNoVirtual());
+    send_node_ = p;
+  }
+  return send_node_;
+}
+inline ::proto::Node* StoragePullRequest::mutable_send_node() {
+  // @@protoc_insertion_point(field_mutable:proto.StoragePullRequest.send_node)
+  return _internal_mutable_send_node();
+}
+inline void StoragePullRequest::set_allocated_send_node(::proto::Node* send_node) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(send_node_);
+  }
+  if (send_node) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena = nullptr;
+    if (message_arena != submessage_arena) {
+      send_node = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, send_node, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  send_node_ = send_node;
+  // @@protoc_insertion_point(field_set_allocated:proto.StoragePullRequest.send_node)
+}
+
+// .proto.Node recv_node = 3;
+inline bool StoragePullRequest::_internal_has_recv_node() const {
+  return this != internal_default_instance() && recv_node_ != nullptr;
+}
+inline bool StoragePullRequest::has_recv_node() const {
+  return _internal_has_recv_node();
+}
+inline const ::proto::Node& StoragePullRequest::_internal_recv_node() const {
+  const ::proto::Node* p = recv_node_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::proto::Node*>(
+      &::proto::_Node_default_instance_);
+}
+inline const ::proto::Node& StoragePullRequest::recv_node() const {
+  // @@protoc_insertion_point(field_get:proto.StoragePullRequest.recv_node)
+  return _internal_recv_node();
+}
+inline ::proto::Node* StoragePullRequest::release_recv_node() {
+  // @@protoc_insertion_point(field_release:proto.StoragePullRequest.recv_node)
+  
+  ::proto::Node* temp = recv_node_;
+  recv_node_ = nullptr;
+  return temp;
+}
+inline ::proto::Node* StoragePullRequest::_internal_mutable_recv_node() {
+  
+  if (recv_node_ == nullptr) {
+    auto* p = CreateMaybeMessage<::proto::Node>(GetArenaNoVirtual());
+    recv_node_ = p;
+  }
+  return recv_node_;
+}
+inline ::proto::Node* StoragePullRequest::mutable_recv_node() {
+  // @@protoc_insertion_point(field_mutable:proto.StoragePullRequest.recv_node)
+  return _internal_mutable_recv_node();
+}
+inline void StoragePullRequest::set_allocated_recv_node(::proto::Node* recv_node) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(recv_node_);
+  }
+  if (recv_node) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena = nullptr;
+    if (message_arena != submessage_arena) {
+      recv_node = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, recv_node, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  recv_node_ = recv_node;
+  // @@protoc_insertion_point(field_set_allocated:proto.StoragePullRequest.recv_node)
 }
 
 // -------------------------------------------------------------------
@@ -574,6 +673,114 @@ inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::proto::Transaction >&
 StoragePullResponse::txns() const {
   // @@protoc_insertion_point(field_list:proto.StoragePullResponse.txns)
   return txns_;
+}
+
+// .proto.Node send_node = 5;
+inline bool StoragePullResponse::_internal_has_send_node() const {
+  return this != internal_default_instance() && send_node_ != nullptr;
+}
+inline bool StoragePullResponse::has_send_node() const {
+  return _internal_has_send_node();
+}
+inline const ::proto::Node& StoragePullResponse::_internal_send_node() const {
+  const ::proto::Node* p = send_node_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::proto::Node*>(
+      &::proto::_Node_default_instance_);
+}
+inline const ::proto::Node& StoragePullResponse::send_node() const {
+  // @@protoc_insertion_point(field_get:proto.StoragePullResponse.send_node)
+  return _internal_send_node();
+}
+inline ::proto::Node* StoragePullResponse::release_send_node() {
+  // @@protoc_insertion_point(field_release:proto.StoragePullResponse.send_node)
+  
+  ::proto::Node* temp = send_node_;
+  send_node_ = nullptr;
+  return temp;
+}
+inline ::proto::Node* StoragePullResponse::_internal_mutable_send_node() {
+  
+  if (send_node_ == nullptr) {
+    auto* p = CreateMaybeMessage<::proto::Node>(GetArenaNoVirtual());
+    send_node_ = p;
+  }
+  return send_node_;
+}
+inline ::proto::Node* StoragePullResponse::mutable_send_node() {
+  // @@protoc_insertion_point(field_mutable:proto.StoragePullResponse.send_node)
+  return _internal_mutable_send_node();
+}
+inline void StoragePullResponse::set_allocated_send_node(::proto::Node* send_node) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(send_node_);
+  }
+  if (send_node) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena = nullptr;
+    if (message_arena != submessage_arena) {
+      send_node = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, send_node, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  send_node_ = send_node;
+  // @@protoc_insertion_point(field_set_allocated:proto.StoragePullResponse.send_node)
+}
+
+// .proto.Node recv_node = 6;
+inline bool StoragePullResponse::_internal_has_recv_node() const {
+  return this != internal_default_instance() && recv_node_ != nullptr;
+}
+inline bool StoragePullResponse::has_recv_node() const {
+  return _internal_has_recv_node();
+}
+inline const ::proto::Node& StoragePullResponse::_internal_recv_node() const {
+  const ::proto::Node* p = recv_node_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::proto::Node*>(
+      &::proto::_Node_default_instance_);
+}
+inline const ::proto::Node& StoragePullResponse::recv_node() const {
+  // @@protoc_insertion_point(field_get:proto.StoragePullResponse.recv_node)
+  return _internal_recv_node();
+}
+inline ::proto::Node* StoragePullResponse::release_recv_node() {
+  // @@protoc_insertion_point(field_release:proto.StoragePullResponse.recv_node)
+  
+  ::proto::Node* temp = recv_node_;
+  recv_node_ = nullptr;
+  return temp;
+}
+inline ::proto::Node* StoragePullResponse::_internal_mutable_recv_node() {
+  
+  if (recv_node_ == nullptr) {
+    auto* p = CreateMaybeMessage<::proto::Node>(GetArenaNoVirtual());
+    recv_node_ = p;
+  }
+  return recv_node_;
+}
+inline ::proto::Node* StoragePullResponse::mutable_recv_node() {
+  // @@protoc_insertion_point(field_mutable:proto.StoragePullResponse.recv_node)
+  return _internal_mutable_recv_node();
+}
+inline void StoragePullResponse::set_allocated_recv_node(::proto::Node* recv_node) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(recv_node_);
+  }
+  if (recv_node) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena = nullptr;
+    if (message_arena != submessage_arena) {
+      recv_node = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, recv_node, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  recv_node_ = recv_node;
+  // @@protoc_insertion_point(field_set_allocated:proto.StoragePullResponse.recv_node)
 }
 
 #ifdef __GNUC__

@@ -18,16 +18,16 @@ extern PROTOBUF_INTERNAL_EXPORT_proto_2fclient_2eproto ::PROTOBUF_NAMESPACE_ID::
 extern PROTOBUF_INTERNAL_EXPORT_proto_2fclient_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_ClientReadResponse_proto_2fclient_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_proto_2fserver_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<10> scc_info_RaftRequest_proto_2fserver_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_proto_2fserver_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<6> scc_info_RaftResponse_proto_2fserver_2eproto;
-extern PROTOBUF_INTERNAL_EXPORT_proto_2fserver_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_ReplyTransactionToClient_proto_2fserver_2eproto;
-extern PROTOBUF_INTERNAL_EXPORT_proto_2fstorage_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_StoragePullRequest_proto_2fstorage_2eproto;
-extern PROTOBUF_INTERNAL_EXPORT_proto_2fstorage_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_StoragePullResponse_proto_2fstorage_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_proto_2fserver_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_ReplyTransactionToClient_proto_2fserver_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_proto_2fstorage_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_StoragePullRequest_proto_2fstorage_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_proto_2fstorage_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_StoragePullResponse_proto_2fstorage_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_proto_2ftransaction_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_Transaction_proto_2ftransaction_2eproto;
 namespace proto {
 class MessageDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<Message> _instance;
   const ::proto::Transaction* txn_;
-  const ::proto::ReplyTransactionToClient* reply_txn_to_client_;
+  const ::proto::ReplyTransactionToClient* reply_txn_result_to_client_;
   const ::proto::ClientReadRequest* client_read_request_;
   const ::proto::ClientReadResponse* client_read_response_;
   const ::proto::StoragePullRequest* storage_pull_request_;
@@ -69,7 +69,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_proto_2fmessage_2eproto::offse
   PROTOBUF_FIELD_OFFSET(::proto::Message, _oneof_case_[0]),
   ~0u,  // no _weak_field_map_
   offsetof(::proto::MessageDefaultTypeInternal, txn_),
-  offsetof(::proto::MessageDefaultTypeInternal, reply_txn_to_client_),
+  offsetof(::proto::MessageDefaultTypeInternal, reply_txn_result_to_client_),
   offsetof(::proto::MessageDefaultTypeInternal, client_read_request_),
   offsetof(::proto::MessageDefaultTypeInternal, client_read_response_),
   offsetof(::proto::MessageDefaultTypeInternal, storage_pull_request_),
@@ -89,22 +89,23 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 const char descriptor_table_protodef_proto_2fmessage_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\023proto/message.proto\022\005proto\032\027proto/tran"
   "saction.proto\032\022proto/server.proto\032\022proto"
-  "/client.proto\032\023proto/storage.proto\"\272\003\n\007M"
-  "essage\022!\n\003txn\030\001 \001(\0132\022.proto.TransactionH"
-  "\000\022>\n\023reply_txn_to_client\030\002 \001(\0132\037.proto.R"
-  "eplyTransactionToClientH\000\0227\n\023client_read"
-  "_request\030\003 \001(\0132\030.proto.ClientReadRequest"
-  "H\000\0229\n\024client_read_response\030\004 \001(\0132\031.proto"
-  ".ClientReadResponseH\000\0229\n\024storage_pull_re"
-  "quest\030\005 \001(\0132\031.proto.StoragePullRequestH\000"
-  "\022;\n\025storage_pull_response\030\006 \001(\0132\032.proto."
-  "StoragePullResponseH\000\022*\n\014raft_request\030\007 "
-  "\001(\0132\022.proto.RaftRequestH\000\022,\n\rraft_respon"
-  "se\030\010 \001(\0132\023.proto.RaftResponseH\000B\006\n\004typeb"
-  "\006proto3"
+  "/client.proto\032\023proto/storage.proto\032\020prot"
+  "o/node.proto\"\301\003\n\007Message\022!\n\003txn\030\001 \001(\0132\022."
+  "proto.TransactionH\000\022E\n\032reply_txn_result_"
+  "to_client\030\002 \001(\0132\037.proto.ReplyTransaction"
+  "ToClientH\000\0227\n\023client_read_request\030\003 \001(\0132"
+  "\030.proto.ClientReadRequestH\000\0229\n\024client_re"
+  "ad_response\030\004 \001(\0132\031.proto.ClientReadResp"
+  "onseH\000\0229\n\024storage_pull_request\030\005 \001(\0132\031.p"
+  "roto.StoragePullRequestH\000\022;\n\025storage_pul"
+  "l_response\030\006 \001(\0132\032.proto.StoragePullResp"
+  "onseH\000\022*\n\014raft_request\030\007 \001(\0132\022.proto.Raf"
+  "tRequestH\000\022,\n\rraft_response\030\010 \001(\0132\023.prot"
+  "o.RaftResponseH\000B\006\n\004typeb\006proto3"
   ;
-static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_proto_2fmessage_2eproto_deps[4] = {
+static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_proto_2fmessage_2eproto_deps[5] = {
   &::descriptor_table_proto_2fclient_2eproto,
+  &::descriptor_table_proto_2fnode_2eproto,
   &::descriptor_table_proto_2fserver_2eproto,
   &::descriptor_table_proto_2fstorage_2eproto,
   &::descriptor_table_proto_2ftransaction_2eproto,
@@ -115,8 +116,8 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_pro
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_proto_2fmessage_2eproto_once;
 static bool descriptor_table_proto_2fmessage_2eproto_initialized = false;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_proto_2fmessage_2eproto = {
-  &descriptor_table_proto_2fmessage_2eproto_initialized, descriptor_table_protodef_proto_2fmessage_2eproto, "proto/message.proto", 567,
-  &descriptor_table_proto_2fmessage_2eproto_once, descriptor_table_proto_2fmessage_2eproto_sccs, descriptor_table_proto_2fmessage_2eproto_deps, 1, 4,
+  &descriptor_table_proto_2fmessage_2eproto_initialized, descriptor_table_protodef_proto_2fmessage_2eproto, "proto/message.proto", 592,
+  &descriptor_table_proto_2fmessage_2eproto_once, descriptor_table_proto_2fmessage_2eproto_sccs, descriptor_table_proto_2fmessage_2eproto_deps, 1, 5,
   schemas, file_default_instances, TableStruct_proto_2fmessage_2eproto::offsets,
   file_level_metadata_proto_2fmessage_2eproto, 1, file_level_enum_descriptors_proto_2fmessage_2eproto, file_level_service_descriptors_proto_2fmessage_2eproto,
 };
@@ -130,7 +131,7 @@ namespace proto {
 void Message::InitAsDefaultInstance() {
   ::proto::_Message_default_instance_.txn_ = const_cast< ::proto::Transaction*>(
       ::proto::Transaction::internal_default_instance());
-  ::proto::_Message_default_instance_.reply_txn_to_client_ = const_cast< ::proto::ReplyTransactionToClient*>(
+  ::proto::_Message_default_instance_.reply_txn_result_to_client_ = const_cast< ::proto::ReplyTransactionToClient*>(
       ::proto::ReplyTransactionToClient::internal_default_instance());
   ::proto::_Message_default_instance_.client_read_request_ = const_cast< ::proto::ClientReadRequest*>(
       ::proto::ClientReadRequest::internal_default_instance());
@@ -148,7 +149,7 @@ void Message::InitAsDefaultInstance() {
 class Message::_Internal {
  public:
   static const ::proto::Transaction& txn(const Message* msg);
-  static const ::proto::ReplyTransactionToClient& reply_txn_to_client(const Message* msg);
+  static const ::proto::ReplyTransactionToClient& reply_txn_result_to_client(const Message* msg);
   static const ::proto::ClientReadRequest& client_read_request(const Message* msg);
   static const ::proto::ClientReadResponse& client_read_response(const Message* msg);
   static const ::proto::StoragePullRequest& storage_pull_request(const Message* msg);
@@ -162,8 +163,8 @@ Message::_Internal::txn(const Message* msg) {
   return *msg->type_.txn_;
 }
 const ::proto::ReplyTransactionToClient&
-Message::_Internal::reply_txn_to_client(const Message* msg) {
-  return *msg->type_.reply_txn_to_client_;
+Message::_Internal::reply_txn_result_to_client(const Message* msg) {
+  return *msg->type_.reply_txn_result_to_client_;
 }
 const ::proto::ClientReadRequest&
 Message::_Internal::client_read_request(const Message* msg) {
@@ -209,23 +210,23 @@ void Message::clear_txn() {
     clear_has_type();
   }
 }
-void Message::set_allocated_reply_txn_to_client(::proto::ReplyTransactionToClient* reply_txn_to_client) {
+void Message::set_allocated_reply_txn_result_to_client(::proto::ReplyTransactionToClient* reply_txn_result_to_client) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaNoVirtual();
   clear_type();
-  if (reply_txn_to_client) {
+  if (reply_txn_result_to_client) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena = nullptr;
     if (message_arena != submessage_arena) {
-      reply_txn_to_client = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, reply_txn_to_client, submessage_arena);
+      reply_txn_result_to_client = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, reply_txn_result_to_client, submessage_arena);
     }
-    set_has_reply_txn_to_client();
-    type_.reply_txn_to_client_ = reply_txn_to_client;
+    set_has_reply_txn_result_to_client();
+    type_.reply_txn_result_to_client_ = reply_txn_result_to_client;
   }
-  // @@protoc_insertion_point(field_set_allocated:proto.Message.reply_txn_to_client)
+  // @@protoc_insertion_point(field_set_allocated:proto.Message.reply_txn_result_to_client)
 }
-void Message::clear_reply_txn_to_client() {
-  if (_internal_has_reply_txn_to_client()) {
-    delete type_.reply_txn_to_client_;
+void Message::clear_reply_txn_result_to_client() {
+  if (_internal_has_reply_txn_result_to_client()) {
+    delete type_.reply_txn_result_to_client_;
     clear_has_type();
   }
 }
@@ -364,8 +365,8 @@ Message::Message(const Message& from)
       _internal_mutable_txn()->::proto::Transaction::MergeFrom(from._internal_txn());
       break;
     }
-    case kReplyTxnToClient: {
-      _internal_mutable_reply_txn_to_client()->::proto::ReplyTransactionToClient::MergeFrom(from._internal_reply_txn_to_client());
+    case kReplyTxnResultToClient: {
+      _internal_mutable_reply_txn_result_to_client()->::proto::ReplyTransactionToClient::MergeFrom(from._internal_reply_txn_result_to_client());
       break;
     }
     case kClientReadRequest: {
@@ -431,8 +432,8 @@ void Message::clear_type() {
       delete type_.txn_;
       break;
     }
-    case kReplyTxnToClient: {
-      delete type_.reply_txn_to_client_;
+    case kReplyTxnResultToClient: {
+      delete type_.reply_txn_result_to_client_;
       break;
     }
     case kClientReadRequest: {
@@ -491,10 +492,10 @@ const char* Message::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::in
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .proto.ReplyTransactionToClient reply_txn_to_client = 2;
+      // .proto.ReplyTransactionToClient reply_txn_result_to_client = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_reply_txn_to_client(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_reply_txn_result_to_client(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -574,12 +575,12 @@ failure:
         1, _Internal::txn(this), target, stream);
   }
 
-  // .proto.ReplyTransactionToClient reply_txn_to_client = 2;
-  if (_internal_has_reply_txn_to_client()) {
+  // .proto.ReplyTransactionToClient reply_txn_result_to_client = 2;
+  if (_internal_has_reply_txn_result_to_client()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        2, _Internal::reply_txn_to_client(this), target, stream);
+        2, _Internal::reply_txn_result_to_client(this), target, stream);
   }
 
   // .proto.ClientReadRequest client_read_request = 3;
@@ -654,11 +655,11 @@ size_t Message::ByteSizeLong() const {
           *type_.txn_);
       break;
     }
-    // .proto.ReplyTransactionToClient reply_txn_to_client = 2;
-    case kReplyTxnToClient: {
+    // .proto.ReplyTransactionToClient reply_txn_result_to_client = 2;
+    case kReplyTxnResultToClient: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *type_.reply_txn_to_client_);
+          *type_.reply_txn_result_to_client_);
       break;
     }
     // .proto.ClientReadRequest client_read_request = 3;
@@ -743,8 +744,8 @@ void Message::MergeFrom(const Message& from) {
       _internal_mutable_txn()->::proto::Transaction::MergeFrom(from._internal_txn());
       break;
     }
-    case kReplyTxnToClient: {
-      _internal_mutable_reply_txn_to_client()->::proto::ReplyTransactionToClient::MergeFrom(from._internal_reply_txn_to_client());
+    case kReplyTxnResultToClient: {
+      _internal_mutable_reply_txn_result_to_client()->::proto::ReplyTransactionToClient::MergeFrom(from._internal_reply_txn_result_to_client());
       break;
     }
     case kClientReadRequest: {

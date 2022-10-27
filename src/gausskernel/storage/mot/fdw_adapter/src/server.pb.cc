@@ -22,6 +22,7 @@ extern PROTOBUF_INTERNAL_EXPORT_proto_2fserver_2eproto ::PROTOBUF_NAMESPACE_ID::
 extern PROTOBUF_INTERNAL_EXPORT_proto_2fserver_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_LookupMasterRequest_proto_2fserver_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_proto_2fserver_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_LookupMasterResponse_proto_2fserver_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_proto_2fserver_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_MasterMetadata_proto_2fserver_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_proto_2fnode_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_Node_proto_2fnode_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_proto_2fserver_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_Ping_proto_2fserver_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_proto_2fserver_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_Pong_proto_2fserver_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_proto_2fserver_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_RaftAcceptRequest_proto_2fserver_2eproto;
@@ -401,8 +402,9 @@ static void InitDefaultsscc_info_ReplyTransactionToClient_proto_2fserver_2eproto
   ::proto::ReplyTransactionToClient::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_ReplyTransactionToClient_proto_2fserver_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_ReplyTransactionToClient_proto_2fserver_2eproto}, {}};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_ReplyTransactionToClient_proto_2fserver_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_ReplyTransactionToClient_proto_2fserver_2eproto}, {
+      &scc_info_Node_proto_2fnode_2eproto.base,}};
 
 static void InitDefaultsscc_info_Signal_proto_2fserver_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -458,6 +460,8 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_proto_2fserver_2eproto::offset
   ~0u,  // no _weak_field_map_
   PROTOBUF_FIELD_OFFSET(::proto::ReplyTransactionToClient, client_txn_id_),
   PROTOBUF_FIELD_OFFSET(::proto::ReplyTransactionToClient, txn_status_),
+  PROTOBUF_FIELD_OFFSET(::proto::ReplyTransactionToClient, send_node_),
+  PROTOBUF_FIELD_OFFSET(::proto::ReplyTransactionToClient, recv_node_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::proto::RaftRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -630,26 +634,26 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_proto_2fserver_2eproto::offset
 };
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::proto::ReplyTransactionToClient)},
-  { 7, -1, sizeof(::proto::RaftRequest)},
-  { 23, -1, sizeof(::proto::Ping)},
-  { 30, -1, sizeof(::proto::Signal)},
-  { 36, -1, sizeof(::proto::LookupMasterRequest)},
-  { 43, -1, sizeof(::proto::ForwardEpochRequest)},
-  { 51, -1, sizeof(::proto::EpochReplicationAck)},
-  { 57, -1, sizeof(::proto::RaftPropose)},
-  { 63, -1, sizeof(::proto::RaftAcceptRequest)},
-  { 71, -1, sizeof(::proto::RaftCommitRequest)},
-  { 79, -1, sizeof(::proto::StatsRequest)},
-  { 87, -1, sizeof(::proto::ChangeServerStateRequest)},
-  { 98, -1, sizeof(::proto::RaftResponse)},
-  { 110, -1, sizeof(::proto::Pong)},
-  { 119, -1, sizeof(::proto::MasterMetadata)},
-  { 126, -1, sizeof(::proto::KeyMasterMetadata)},
-  { 133, -1, sizeof(::proto::LookupMasterResponse)},
-  { 140, -1, sizeof(::proto::RaftAcceptResponse)},
-  { 149, -1, sizeof(::proto::RaftCommitResponse)},
-  { 158, -1, sizeof(::proto::StatsResponse)},
-  { 166, -1, sizeof(::proto::ChangeServerStateResponse)},
+  { 9, -1, sizeof(::proto::RaftRequest)},
+  { 25, -1, sizeof(::proto::Ping)},
+  { 32, -1, sizeof(::proto::Signal)},
+  { 38, -1, sizeof(::proto::LookupMasterRequest)},
+  { 45, -1, sizeof(::proto::ForwardEpochRequest)},
+  { 53, -1, sizeof(::proto::EpochReplicationAck)},
+  { 59, -1, sizeof(::proto::RaftPropose)},
+  { 65, -1, sizeof(::proto::RaftAcceptRequest)},
+  { 73, -1, sizeof(::proto::RaftCommitRequest)},
+  { 81, -1, sizeof(::proto::StatsRequest)},
+  { 89, -1, sizeof(::proto::ChangeServerStateRequest)},
+  { 100, -1, sizeof(::proto::RaftResponse)},
+  { 112, -1, sizeof(::proto::Pong)},
+  { 121, -1, sizeof(::proto::MasterMetadata)},
+  { 128, -1, sizeof(::proto::KeyMasterMetadata)},
+  { 135, -1, sizeof(::proto::LookupMasterResponse)},
+  { 142, -1, sizeof(::proto::RaftAcceptResponse)},
+  { 151, -1, sizeof(::proto::RaftCommitResponse)},
+  { 160, -1, sizeof(::proto::StatsResponse)},
+  { 168, -1, sizeof(::proto::ChangeServerStateResponse)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -678,61 +682,64 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 
 const char descriptor_table_protodef_proto_2fserver_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\022proto/server.proto\022\005proto\032\027proto/trans"
-  "action.proto\"V\n\030ReplyTransactionToClient"
-  "\022\025\n\rclient_txn_id\030\001 \001(\004\022#\n\ntxn_status\030\002 "
-  "\001(\0162\017.proto.TxnState\"\356\003\n\013RaftRequest\022\033\n\004"
-  "ping\030\001 \001(\0132\013.proto.PingH\000\022\037\n\006signal\030\002 \001("
-  "\0132\r.proto.SignalH\000\0223\n\rlookup_master\030\003 \001("
-  "\0132\032.proto.LookupMasterRequestH\000\0223\n\rforwa"
-  "rd_epoch\030\004 \001(\0132\032.proto.ForwardEpochReque"
-  "stH\000\022;\n\025epoch_replication_ack\030\005 \001(\0132\032.pr"
-  "oto.EpochReplicationAckH\000\022*\n\014raft_propos"
-  "e\030\006 \001(\0132\022.proto.RaftProposeH\000\022/\n\013raft_ac"
-  "cept\030\007 \001(\0132\030.proto.RaftAcceptRequestH\000\022/"
-  "\n\013raft_commit\030\010 \001(\0132\030.proto.RaftCommitRe"
-  "questH\000\022$\n\005stats\030\t \001(\0132\023.proto.StatsRequ"
-  "estH\000\022>\n\023change_server_state\030\n \001(\0132\037.pro"
-  "to.ChangeServerStateRequestH\000B\006\n\004type\" \n"
-  "\004Ping\022\014\n\004from\030\001 \001(\005\022\n\n\002to\030\002 \001(\005\"\026\n\006Signa"
-  "l\022\014\n\004from\030\001 \001(\005\"4\n\023LookupMasterRequest\022\017"
-  "\n\007txn_ids\030\001 \003(\004\022\014\n\004keys\030\002 \003(\014\"A\n\023Forward"
-  "EpochRequest\022\014\n\004from\030\001 \001(\005\022\n\n\002to\030\002 \001(\005\022\020"
-  "\n\010epoch_id\030\003 \001(\004\"\'\n\023EpochReplicationAck\022"
-  "\020\n\010epoch_id\030\001 \001(\004\"\034\n\013RaftPropose\022\r\n\005valu"
-  "e\030\001 \001(\004\"\?\n\021RaftAcceptRequest\022\014\n\004from\030\001 \001"
-  "(\r\022\n\n\002to\030\002 \001(\r\022\020\n\010epoch_id\030\003 \001(\004\"\?\n\021Raft"
-  "CommitRequest\022\014\n\004from\030\001 \001(\r\022\n\n\002to\030\002 \001(\r\022"
-  "\020\n\010epoch_id\030\003 \001(\004\"7\n\014StatsRequest\022\014\n\004fro"
-  "m\030\001 \001(\r\022\n\n\002to\030\002 \001(\r\022\r\n\005level\030\003 \001(\r\"}\n\030Ch"
-  "angeServerStateRequest\022\014\n\004from\030\001 \001(\r\022\n\n\002"
-  "to\030\002 \001(\r\022\016\n\006target\030\003 \001(\r\022\r\n\005state\030\004 \001(\r\022"
-  "\026\n\016pull_server_id\030\005 \001(\r\022\020\n\010epoch_id\030\006 \001("
-  "\004\"\265\002\n\014RaftResponse\022\033\n\004pong\030\001 \001(\0132\013.proto"
-  ".PongH\000\0224\n\rlookup_master\030\002 \001(\0132\033.proto.L"
-  "ookupMasterResponseH\000\0220\n\013raft_accept\030\003 \001"
-  "(\0132\031.proto.RaftAcceptResponseH\000\0220\n\013raft_"
-  "commit\030\004 \001(\0132\031.proto.RaftCommitResponseH"
-  "\000\022%\n\005stats\030\005 \001(\0132\024.proto.StatsResponseH\000"
-  "\022\?\n\023change_server_state\030\006 \001(\0132 .proto.Ch"
-  "angeServerStateResponseH\000B\006\n\004type\"@\n\004Pon"
-  "g\022\014\n\004from\030\001 \001(\005\022\n\n\002to\030\002 \001(\005\022\014\n\004time\030\003 \001("
-  "\003\022\020\n\010epoch_id\030\004 \001(\003\"5\n\016MasterMetadata\022\016\n"
-  "\006master\030\001 \001(\r\022\023\n\013epoch_count\030\002 \001(\r\"I\n\021Ke"
-  "yMasterMetadata\022\013\n\003key\030\001 \001(\014\022\'\n\010metadata"
-  "\030\002 \001(\0132\025.proto.MasterMetadata\"Z\n\024LookupM"
-  "asterResponse\022\020\n\010epoch_id\030\001 \003(\004\0220\n\016looku"
-  "p_results\030\002 \003(\0132\030.proto.KeyMasterMetadat"
-  "a\"P\n\022RaftAcceptResponse\022\014\n\004from\030\001 \001(\r\022\n\n"
-  "\002to\030\002 \001(\r\022\020\n\010epoch_id\030\003 \001(\004\022\016\n\006result\030\004 "
-  "\001(\r\"P\n\022RaftCommitResponse\022\014\n\004from\030\001 \001(\r\022"
-  "\n\n\002to\030\002 \001(\r\022\020\n\010epoch_id\030\003 \001(\004\022\016\n\006result\030"
-  "\004 \001(\r\";\n\rStatsResponse\022\014\n\004from\030\001 \001(\r\022\n\n\002"
-  "to\030\002 \001(\004\022\020\n\010epoch_id\030\003 \001(\004\"f\n\031ChangeServ"
-  "erStateResponse\022\014\n\004from\030\001 \001(\r\022\n\n\002to\030\002 \001("
-  "\r\022\016\n\006target\030\003 \001(\r\022\020\n\010epoch_id\030\004 \001(\004\022\r\n\005s"
-  "tate\030\005 \001(\rb\006proto3"
+  "action.proto\032\020proto/node.proto\"\226\001\n\030Reply"
+  "TransactionToClient\022\025\n\rclient_txn_id\030\001 \001"
+  "(\004\022#\n\ntxn_status\030\002 \001(\0162\017.proto.TxnState\022"
+  "\036\n\tsend_node\030\003 \001(\0132\013.proto.Node\022\036\n\trecv_"
+  "node\030\004 \001(\0132\013.proto.Node\"\356\003\n\013RaftRequest\022"
+  "\033\n\004ping\030\001 \001(\0132\013.proto.PingH\000\022\037\n\006signal\030\002"
+  " \001(\0132\r.proto.SignalH\000\0223\n\rlookup_master\030\003"
+  " \001(\0132\032.proto.LookupMasterRequestH\000\0223\n\rfo"
+  "rward_epoch\030\004 \001(\0132\032.proto.ForwardEpochRe"
+  "questH\000\022;\n\025epoch_replication_ack\030\005 \001(\0132\032"
+  ".proto.EpochReplicationAckH\000\022*\n\014raft_pro"
+  "pose\030\006 \001(\0132\022.proto.RaftProposeH\000\022/\n\013raft"
+  "_accept\030\007 \001(\0132\030.proto.RaftAcceptRequestH"
+  "\000\022/\n\013raft_commit\030\010 \001(\0132\030.proto.RaftCommi"
+  "tRequestH\000\022$\n\005stats\030\t \001(\0132\023.proto.StatsR"
+  "equestH\000\022>\n\023change_server_state\030\n \001(\0132\037."
+  "proto.ChangeServerStateRequestH\000B\006\n\004type"
+  "\" \n\004Ping\022\014\n\004from\030\001 \001(\005\022\n\n\002to\030\002 \001(\005\"\026\n\006Si"
+  "gnal\022\014\n\004from\030\001 \001(\005\"4\n\023LookupMasterReques"
+  "t\022\017\n\007txn_ids\030\001 \003(\004\022\014\n\004keys\030\002 \003(\014\"A\n\023Forw"
+  "ardEpochRequest\022\014\n\004from\030\001 \001(\005\022\n\n\002to\030\002 \001("
+  "\005\022\020\n\010epoch_id\030\003 \001(\004\"\'\n\023EpochReplicationA"
+  "ck\022\020\n\010epoch_id\030\001 \001(\004\"\034\n\013RaftPropose\022\r\n\005v"
+  "alue\030\001 \001(\004\"\?\n\021RaftAcceptRequest\022\014\n\004from\030"
+  "\001 \001(\r\022\n\n\002to\030\002 \001(\r\022\020\n\010epoch_id\030\003 \001(\004\"\?\n\021R"
+  "aftCommitRequest\022\014\n\004from\030\001 \001(\r\022\n\n\002to\030\002 \001"
+  "(\r\022\020\n\010epoch_id\030\003 \001(\004\"7\n\014StatsRequest\022\014\n\004"
+  "from\030\001 \001(\r\022\n\n\002to\030\002 \001(\r\022\r\n\005level\030\003 \001(\r\"}\n"
+  "\030ChangeServerStateRequest\022\014\n\004from\030\001 \001(\r\022"
+  "\n\n\002to\030\002 \001(\r\022\016\n\006target\030\003 \001(\r\022\r\n\005state\030\004 \001"
+  "(\r\022\026\n\016pull_server_id\030\005 \001(\r\022\020\n\010epoch_id\030\006"
+  " \001(\004\"\265\002\n\014RaftResponse\022\033\n\004pong\030\001 \001(\0132\013.pr"
+  "oto.PongH\000\0224\n\rlookup_master\030\002 \001(\0132\033.prot"
+  "o.LookupMasterResponseH\000\0220\n\013raft_accept\030"
+  "\003 \001(\0132\031.proto.RaftAcceptResponseH\000\0220\n\013ra"
+  "ft_commit\030\004 \001(\0132\031.proto.RaftCommitRespon"
+  "seH\000\022%\n\005stats\030\005 \001(\0132\024.proto.StatsRespons"
+  "eH\000\022\?\n\023change_server_state\030\006 \001(\0132 .proto"
+  ".ChangeServerStateResponseH\000B\006\n\004type\"@\n\004"
+  "Pong\022\014\n\004from\030\001 \001(\005\022\n\n\002to\030\002 \001(\005\022\014\n\004time\030\003"
+  " \001(\003\022\020\n\010epoch_id\030\004 \001(\003\"5\n\016MasterMetadata"
+  "\022\016\n\006master\030\001 \001(\r\022\023\n\013epoch_count\030\002 \001(\r\"I\n"
+  "\021KeyMasterMetadata\022\013\n\003key\030\001 \001(\014\022\'\n\010metad"
+  "ata\030\002 \001(\0132\025.proto.MasterMetadata\"Z\n\024Look"
+  "upMasterResponse\022\020\n\010epoch_id\030\001 \003(\004\0220\n\016lo"
+  "okup_results\030\002 \003(\0132\030.proto.KeyMasterMeta"
+  "data\"P\n\022RaftAcceptResponse\022\014\n\004from\030\001 \001(\r"
+  "\022\n\n\002to\030\002 \001(\r\022\020\n\010epoch_id\030\003 \001(\004\022\016\n\006result"
+  "\030\004 \001(\r\"P\n\022RaftCommitResponse\022\014\n\004from\030\001 \001"
+  "(\r\022\n\n\002to\030\002 \001(\r\022\020\n\010epoch_id\030\003 \001(\004\022\016\n\006resu"
+  "lt\030\004 \001(\r\";\n\rStatsResponse\022\014\n\004from\030\001 \001(\r\022"
+  "\n\n\002to\030\002 \001(\004\022\020\n\010epoch_id\030\003 \001(\004\"f\n\031ChangeS"
+  "erverStateResponse\022\014\n\004from\030\001 \001(\r\022\n\n\002to\030\002"
+  " \001(\r\022\016\n\006target\030\003 \001(\r\022\020\n\010epoch_id\030\004 \001(\004\022\r"
+  "\n\005state\030\005 \001(\rb\006proto3"
   ;
-static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_proto_2fserver_2eproto_deps[1] = {
+static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_proto_2fserver_2eproto_deps[2] = {
+  &::descriptor_table_proto_2fnode_2eproto,
   &::descriptor_table_proto_2ftransaction_2eproto,
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_proto_2fserver_2eproto_sccs[21] = {
@@ -761,8 +768,8 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_pro
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_proto_2fserver_2eproto_once;
 static bool descriptor_table_proto_2fserver_2eproto_initialized = false;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_proto_2fserver_2eproto = {
-  &descriptor_table_proto_2fserver_2eproto_initialized, descriptor_table_protodef_proto_2fserver_2eproto, "proto/server.proto", 2138,
-  &descriptor_table_proto_2fserver_2eproto_once, descriptor_table_proto_2fserver_2eproto_sccs, descriptor_table_proto_2fserver_2eproto_deps, 21, 1,
+  &descriptor_table_proto_2fserver_2eproto_initialized, descriptor_table_protodef_proto_2fserver_2eproto, "proto/server.proto", 2221,
+  &descriptor_table_proto_2fserver_2eproto_once, descriptor_table_proto_2fserver_2eproto_sccs, descriptor_table_proto_2fserver_2eproto_deps, 21, 2,
   schemas, file_default_instances, TableStruct_proto_2fserver_2eproto::offsets,
   file_level_metadata_proto_2fserver_2eproto, 21, file_level_enum_descriptors_proto_2fserver_2eproto, file_level_service_descriptors_proto_2fserver_2eproto,
 };
@@ -774,11 +781,37 @@ namespace proto {
 // ===================================================================
 
 void ReplyTransactionToClient::InitAsDefaultInstance() {
+  ::proto::_ReplyTransactionToClient_default_instance_._instance.get_mutable()->send_node_ = const_cast< ::proto::Node*>(
+      ::proto::Node::internal_default_instance());
+  ::proto::_ReplyTransactionToClient_default_instance_._instance.get_mutable()->recv_node_ = const_cast< ::proto::Node*>(
+      ::proto::Node::internal_default_instance());
 }
 class ReplyTransactionToClient::_Internal {
  public:
+  static const ::proto::Node& send_node(const ReplyTransactionToClient* msg);
+  static const ::proto::Node& recv_node(const ReplyTransactionToClient* msg);
 };
 
+const ::proto::Node&
+ReplyTransactionToClient::_Internal::send_node(const ReplyTransactionToClient* msg) {
+  return *msg->send_node_;
+}
+const ::proto::Node&
+ReplyTransactionToClient::_Internal::recv_node(const ReplyTransactionToClient* msg) {
+  return *msg->recv_node_;
+}
+void ReplyTransactionToClient::clear_send_node() {
+  if (GetArenaNoVirtual() == nullptr && send_node_ != nullptr) {
+    delete send_node_;
+  }
+  send_node_ = nullptr;
+}
+void ReplyTransactionToClient::clear_recv_node() {
+  if (GetArenaNoVirtual() == nullptr && recv_node_ != nullptr) {
+    delete recv_node_;
+  }
+  recv_node_ = nullptr;
+}
 ReplyTransactionToClient::ReplyTransactionToClient()
   : ::PROTOBUF_NAMESPACE_ID::Message(), _internal_metadata_(nullptr) {
   SharedCtor();
@@ -788,6 +821,16 @@ ReplyTransactionToClient::ReplyTransactionToClient(const ReplyTransactionToClien
   : ::PROTOBUF_NAMESPACE_ID::Message(),
       _internal_metadata_(nullptr) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
+  if (from._internal_has_send_node()) {
+    send_node_ = new ::proto::Node(*from.send_node_);
+  } else {
+    send_node_ = nullptr;
+  }
+  if (from._internal_has_recv_node()) {
+    recv_node_ = new ::proto::Node(*from.recv_node_);
+  } else {
+    recv_node_ = nullptr;
+  }
   ::memcpy(&client_txn_id_, &from.client_txn_id_,
     static_cast<size_t>(reinterpret_cast<char*>(&txn_status_) -
     reinterpret_cast<char*>(&client_txn_id_)) + sizeof(txn_status_));
@@ -795,9 +838,10 @@ ReplyTransactionToClient::ReplyTransactionToClient(const ReplyTransactionToClien
 }
 
 void ReplyTransactionToClient::SharedCtor() {
-  ::memset(&client_txn_id_, 0, static_cast<size_t>(
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_ReplyTransactionToClient_proto_2fserver_2eproto.base);
+  ::memset(&send_node_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&txn_status_) -
-      reinterpret_cast<char*>(&client_txn_id_)) + sizeof(txn_status_));
+      reinterpret_cast<char*>(&send_node_)) + sizeof(txn_status_));
 }
 
 ReplyTransactionToClient::~ReplyTransactionToClient() {
@@ -806,6 +850,8 @@ ReplyTransactionToClient::~ReplyTransactionToClient() {
 }
 
 void ReplyTransactionToClient::SharedDtor() {
+  if (this != internal_default_instance()) delete send_node_;
+  if (this != internal_default_instance()) delete recv_node_;
 }
 
 void ReplyTransactionToClient::SetCachedSize(int size) const {
@@ -823,6 +869,14 @@ void ReplyTransactionToClient::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  if (GetArenaNoVirtual() == nullptr && send_node_ != nullptr) {
+    delete send_node_;
+  }
+  send_node_ = nullptr;
+  if (GetArenaNoVirtual() == nullptr && recv_node_ != nullptr) {
+    delete recv_node_;
+  }
+  recv_node_ = nullptr;
   ::memset(&client_txn_id_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&txn_status_) -
       reinterpret_cast<char*>(&client_txn_id_)) + sizeof(txn_status_));
@@ -849,6 +903,20 @@ const char* ReplyTransactionToClient::_InternalParse(const char* ptr, ::PROTOBUF
           ::PROTOBUF_NAMESPACE_ID::uint64 val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
           CHK_(ptr);
           _internal_set_txn_status(static_cast<::proto::TxnState>(val));
+        } else goto handle_unusual;
+        continue;
+      // .proto.Node send_node = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
+          ptr = ctx->ParseMessage(_internal_mutable_send_node(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .proto.Node recv_node = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
+          ptr = ctx->ParseMessage(_internal_mutable_recv_node(), ptr);
+          CHK_(ptr);
         } else goto handle_unusual;
         continue;
       default: {
@@ -890,6 +958,22 @@ failure:
       2, this->_internal_txn_status(), target);
   }
 
+  // .proto.Node send_node = 3;
+  if (this->has_send_node()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        3, _Internal::send_node(this), target, stream);
+  }
+
+  // .proto.Node recv_node = 4;
+  if (this->has_recv_node()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        4, _Internal::recv_node(this), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields(), target, stream);
@@ -905,6 +989,20 @@ size_t ReplyTransactionToClient::ByteSizeLong() const {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
+
+  // .proto.Node send_node = 3;
+  if (this->has_send_node()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *send_node_);
+  }
+
+  // .proto.Node recv_node = 4;
+  if (this->has_recv_node()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *recv_node_);
+  }
 
   // uint64 client_txn_id = 1;
   if (this->client_txn_id() != 0) {
@@ -950,6 +1048,12 @@ void ReplyTransactionToClient::MergeFrom(const ReplyTransactionToClient& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
+  if (from.has_send_node()) {
+    _internal_mutable_send_node()->::proto::Node::MergeFrom(from._internal_send_node());
+  }
+  if (from.has_recv_node()) {
+    _internal_mutable_recv_node()->::proto::Node::MergeFrom(from._internal_recv_node());
+  }
   if (from.client_txn_id() != 0) {
     _internal_set_client_txn_id(from._internal_client_txn_id());
   }
@@ -979,6 +1083,8 @@ bool ReplyTransactionToClient::IsInitialized() const {
 void ReplyTransactionToClient::InternalSwap(ReplyTransactionToClient* other) {
   using std::swap;
   _internal_metadata_.Swap(&other->_internal_metadata_);
+  swap(send_node_, other->send_node_);
+  swap(recv_node_, other->recv_node_);
   swap(client_txn_id_, other->client_txn_id_);
   swap(txn_status_, other->txn_status_);
 }

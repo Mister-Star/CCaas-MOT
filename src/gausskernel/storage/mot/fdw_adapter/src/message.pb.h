@@ -36,6 +36,7 @@
 #include "proto/server.pb.h"
 #include "proto/client.pb.h"
 #include "proto/storage.pb.h"
+#include "proto/node.pb.h"
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
 #define PROTOBUF_INTERNAL_EXPORT_proto_2fmessage_2eproto
@@ -108,7 +109,7 @@ class Message :
 
   enum TypeCase {
     kTxn = 1,
-    kReplyTxnToClient = 2,
+    kReplyTxnResultToClient = 2,
     kClientReadRequest = 3,
     kClientReadResponse = 4,
     kStoragePullRequest = 5,
@@ -189,7 +190,7 @@ class Message :
 
   enum : int {
     kTxnFieldNumber = 1,
-    kReplyTxnToClientFieldNumber = 2,
+    kReplyTxnResultToClientFieldNumber = 2,
     kClientReadRequestFieldNumber = 3,
     kClientReadResponseFieldNumber = 4,
     kStoragePullRequestFieldNumber = 5,
@@ -212,19 +213,19 @@ class Message :
   ::proto::Transaction* _internal_mutable_txn();
   public:
 
-  // .proto.ReplyTransactionToClient reply_txn_to_client = 2;
-  bool has_reply_txn_to_client() const;
+  // .proto.ReplyTransactionToClient reply_txn_result_to_client = 2;
+  bool has_reply_txn_result_to_client() const;
   private:
-  bool _internal_has_reply_txn_to_client() const;
+  bool _internal_has_reply_txn_result_to_client() const;
   public:
-  void clear_reply_txn_to_client();
-  const ::proto::ReplyTransactionToClient& reply_txn_to_client() const;
-  ::proto::ReplyTransactionToClient* release_reply_txn_to_client();
-  ::proto::ReplyTransactionToClient* mutable_reply_txn_to_client();
-  void set_allocated_reply_txn_to_client(::proto::ReplyTransactionToClient* reply_txn_to_client);
+  void clear_reply_txn_result_to_client();
+  const ::proto::ReplyTransactionToClient& reply_txn_result_to_client() const;
+  ::proto::ReplyTransactionToClient* release_reply_txn_result_to_client();
+  ::proto::ReplyTransactionToClient* mutable_reply_txn_result_to_client();
+  void set_allocated_reply_txn_result_to_client(::proto::ReplyTransactionToClient* reply_txn_result_to_client);
   private:
-  const ::proto::ReplyTransactionToClient& _internal_reply_txn_to_client() const;
-  ::proto::ReplyTransactionToClient* _internal_mutable_reply_txn_to_client();
+  const ::proto::ReplyTransactionToClient& _internal_reply_txn_result_to_client() const;
+  ::proto::ReplyTransactionToClient* _internal_mutable_reply_txn_result_to_client();
   public:
 
   // .proto.ClientReadRequest client_read_request = 3;
@@ -323,7 +324,7 @@ class Message :
  private:
   class _Internal;
   void set_has_txn();
-  void set_has_reply_txn_to_client();
+  void set_has_reply_txn_result_to_client();
   void set_has_client_read_request();
   void set_has_client_read_response();
   void set_has_storage_pull_request();
@@ -338,7 +339,7 @@ class Message :
   union TypeUnion {
     TypeUnion() {}
     ::proto::Transaction* txn_;
-    ::proto::ReplyTransactionToClient* reply_txn_to_client_;
+    ::proto::ReplyTransactionToClient* reply_txn_result_to_client_;
     ::proto::ClientReadRequest* client_read_request_;
     ::proto::ClientReadResponse* client_read_response_;
     ::proto::StoragePullRequest* storage_pull_request_;
@@ -406,48 +407,48 @@ inline ::proto::Transaction* Message::mutable_txn() {
   return _internal_mutable_txn();
 }
 
-// .proto.ReplyTransactionToClient reply_txn_to_client = 2;
-inline bool Message::_internal_has_reply_txn_to_client() const {
-  return type_case() == kReplyTxnToClient;
+// .proto.ReplyTransactionToClient reply_txn_result_to_client = 2;
+inline bool Message::_internal_has_reply_txn_result_to_client() const {
+  return type_case() == kReplyTxnResultToClient;
 }
-inline bool Message::has_reply_txn_to_client() const {
-  return _internal_has_reply_txn_to_client();
+inline bool Message::has_reply_txn_result_to_client() const {
+  return _internal_has_reply_txn_result_to_client();
 }
-inline void Message::set_has_reply_txn_to_client() {
-  _oneof_case_[0] = kReplyTxnToClient;
+inline void Message::set_has_reply_txn_result_to_client() {
+  _oneof_case_[0] = kReplyTxnResultToClient;
 }
-inline ::proto::ReplyTransactionToClient* Message::release_reply_txn_to_client() {
-  // @@protoc_insertion_point(field_release:proto.Message.reply_txn_to_client)
-  if (_internal_has_reply_txn_to_client()) {
+inline ::proto::ReplyTransactionToClient* Message::release_reply_txn_result_to_client() {
+  // @@protoc_insertion_point(field_release:proto.Message.reply_txn_result_to_client)
+  if (_internal_has_reply_txn_result_to_client()) {
     clear_has_type();
-      ::proto::ReplyTransactionToClient* temp = type_.reply_txn_to_client_;
-    type_.reply_txn_to_client_ = nullptr;
+      ::proto::ReplyTransactionToClient* temp = type_.reply_txn_result_to_client_;
+    type_.reply_txn_result_to_client_ = nullptr;
     return temp;
   } else {
     return nullptr;
   }
 }
-inline const ::proto::ReplyTransactionToClient& Message::_internal_reply_txn_to_client() const {
-  return _internal_has_reply_txn_to_client()
-      ? *type_.reply_txn_to_client_
+inline const ::proto::ReplyTransactionToClient& Message::_internal_reply_txn_result_to_client() const {
+  return _internal_has_reply_txn_result_to_client()
+      ? *type_.reply_txn_result_to_client_
       : *reinterpret_cast< ::proto::ReplyTransactionToClient*>(&::proto::_ReplyTransactionToClient_default_instance_);
 }
-inline const ::proto::ReplyTransactionToClient& Message::reply_txn_to_client() const {
-  // @@protoc_insertion_point(field_get:proto.Message.reply_txn_to_client)
-  return _internal_reply_txn_to_client();
+inline const ::proto::ReplyTransactionToClient& Message::reply_txn_result_to_client() const {
+  // @@protoc_insertion_point(field_get:proto.Message.reply_txn_result_to_client)
+  return _internal_reply_txn_result_to_client();
 }
-inline ::proto::ReplyTransactionToClient* Message::_internal_mutable_reply_txn_to_client() {
-  if (!_internal_has_reply_txn_to_client()) {
+inline ::proto::ReplyTransactionToClient* Message::_internal_mutable_reply_txn_result_to_client() {
+  if (!_internal_has_reply_txn_result_to_client()) {
     clear_type();
-    set_has_reply_txn_to_client();
-    type_.reply_txn_to_client_ = CreateMaybeMessage< ::proto::ReplyTransactionToClient >(
+    set_has_reply_txn_result_to_client();
+    type_.reply_txn_result_to_client_ = CreateMaybeMessage< ::proto::ReplyTransactionToClient >(
         GetArenaNoVirtual());
   }
-  return type_.reply_txn_to_client_;
+  return type_.reply_txn_result_to_client_;
 }
-inline ::proto::ReplyTransactionToClient* Message::mutable_reply_txn_to_client() {
-  // @@protoc_insertion_point(field_mutable:proto.Message.reply_txn_to_client)
-  return _internal_mutable_reply_txn_to_client();
+inline ::proto::ReplyTransactionToClient* Message::mutable_reply_txn_result_to_client() {
+  // @@protoc_insertion_point(field_mutable:proto.Message.reply_txn_result_to_client)
+  return _internal_mutable_reply_txn_result_to_client();
 }
 
 // .proto.ClientReadRequest client_read_request = 3;

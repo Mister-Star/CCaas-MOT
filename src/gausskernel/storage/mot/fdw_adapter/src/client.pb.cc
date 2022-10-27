@@ -89,13 +89,15 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 
 const char descriptor_table_protodef_proto_2fclient_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\022proto/client.proto\022\005proto\032\027proto/trans"
-  "action.proto\"P\n\021ClientReadRequest\022\021\n\tcli"
-  "ent_ip\030\001 \001(\t\022\016\n\006txn_id\030\002 \001(\004\022\030\n\004rows\030\003 \003"
-  "(\0132\n.proto.Row\"]\n\022ClientReadResponse\022\035\n\006"
-  "result\030\001 \001(\0162\r.proto.Result\022\016\n\006txn_id\030\002 "
-  "\001(\004\022\030\n\004rows\030\003 \003(\0132\n.proto.Rowb\006proto3"
+  "action.proto\032\020proto/node.proto\"P\n\021Client"
+  "ReadRequest\022\021\n\tclient_ip\030\001 \001(\t\022\016\n\006txn_id"
+  "\030\002 \001(\004\022\030\n\004rows\030\003 \003(\0132\n.proto.Row\"]\n\022Clie"
+  "ntReadResponse\022\035\n\006result\030\001 \001(\0162\r.proto.R"
+  "esult\022\016\n\006txn_id\030\002 \001(\004\022\030\n\004rows\030\003 \003(\0132\n.pr"
+  "oto.Rowb\006proto3"
   ;
-static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_proto_2fclient_2eproto_deps[1] = {
+static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_proto_2fclient_2eproto_deps[2] = {
+  &::descriptor_table_proto_2fnode_2eproto,
   &::descriptor_table_proto_2ftransaction_2eproto,
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_proto_2fclient_2eproto_sccs[2] = {
@@ -105,8 +107,8 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_pro
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_proto_2fclient_2eproto_once;
 static bool descriptor_table_proto_2fclient_2eproto_initialized = false;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_proto_2fclient_2eproto = {
-  &descriptor_table_proto_2fclient_2eproto_initialized, descriptor_table_protodef_proto_2fclient_2eproto, "proto/client.proto", 237,
-  &descriptor_table_proto_2fclient_2eproto_once, descriptor_table_proto_2fclient_2eproto_sccs, descriptor_table_proto_2fclient_2eproto_deps, 2, 1,
+  &descriptor_table_proto_2fclient_2eproto_initialized, descriptor_table_protodef_proto_2fclient_2eproto, "proto/client.proto", 255,
+  &descriptor_table_proto_2fclient_2eproto_once, descriptor_table_proto_2fclient_2eproto_sccs, descriptor_table_proto_2fclient_2eproto_deps, 2, 2,
   schemas, file_default_instances, TableStruct_proto_2fclient_2eproto::offsets,
   file_level_metadata_proto_2fclient_2eproto, 2, file_level_enum_descriptors_proto_2fclient_2eproto, file_level_service_descriptors_proto_2fclient_2eproto,
 };

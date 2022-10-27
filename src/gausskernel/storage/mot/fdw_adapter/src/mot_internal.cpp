@@ -30,6 +30,7 @@
 #include <pthread.h>
 #include <cstring>
 #include "transaction.pb.h"
+#include "node.pb.h"
 #include "client.pb.h"
 #include "server.pb.h"
 #include "storage.pb.h"
@@ -577,8 +578,7 @@ void MOTAdaptor::RecordCommit(uint64_t csn)
     MOT::TxnManager* txn = GetSafeTxn(__FUNCTION__);
     txn->SetCommitSequenceNumber(csn);
     if (!IS_PGXC_COORDINATOR) {
-        // txn->RecordCommit();
-        //ADDBY TAAS do nothing
+        txn->RecordCommit();
     } else {
         txn->LiteCommit();
     }
@@ -2380,17 +2380,23 @@ public:
 
     bool contain(key &k, value &v){
         std::unordered_map<key, value>& _map_temp = GetMapRef(k);
+        std::mutex& _mutex_temp = GetMutexRef(k);
+        std::unique_lock<std::mutex> lock(_mutex_temp);
         map_iterator iter = _map_temp.find(k);
         if(iter != _map_temp.end()){
             if(iter->second == v){
+                lock.unlock();
                 return true;
             }
         }
+        lock.unlock();
         return false;
     }
 
     bool contain(key &k){
         std::unordered_map<key, value>& _map_temp = GetMapRef(k);
+        std::mutex& _mutex_temp = GetMutexRef(k);
+        std::unique_lock<std::mutex> lock(_mutex_temp);
         map_iterator iter = _map_temp.find(k);
         if(iter != _map_temp.end()){
             return true;
@@ -2407,6 +2413,34 @@ public:
             }
         }
         return false;
+    }
+
+    bool get_value(key &k, value &v) {
+        std::unordered_map<key, value>& _map_temp = GetMapRef(k);
+        std::mutex& _mutex_temp = GetMutexRef(k);
+        std::unique_lock<std::mutex> lock(_mutex_temp);
+        map_iterator iter = _map_temp.find(k);
+        if(iter != _map_temp.end()) {
+            v = iter->second;
+            lock.unlock();
+            return true;
+        }
+        else {
+            lock.unlock();
+            return false;
+        }
+    }
+
+    bool unsafe_get_value(key &k, value &v) {
+        std::unordered_map<key, value>& _map_temp = GetMapRef(k);
+        map_iterator iter = _map_temp.find(k);
+        if(iter != _map_temp.end()) {
+            v = iter->second;
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 
     size_type size() {
@@ -2526,11 +2560,13 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
     }
     txn->set_client_ip(kLocalIp);
     txn->set_client_txn_id(local_csn.fetch_add(1));
+    txMan->SetCommitSequenceNumber(txn->client_txn_id());
     
     MOT::TxnManager* txnMan_ptr = nullptr;
-    mutex_map.insert(txn->client_txn_id(), this, &txnMan_ptr);
-    if(txnMan_ptr != nullptr && txnMan_ptr->commit_state == 0) { //抢占了别人的 hash map 出现冲突
-        txnMan_ptr->commit_state = 1;
+    txn_map.insert(txn->client_txn_id(), this, &txnMan_ptr);
+    if(txnMan_ptr != nullptr && txnMan_ptr->commit_state == MOT::RC::RC_WAIT) { 
+        //抢占了别人的 hash map 出现冲突 abort 前一个，然后存储当前的
+        txnMan_ptr->commit_state = MOT::RC::RC_ABORT;
         txnMan_ptr->cv.notify_all();
     }
 
@@ -2570,6 +2606,7 @@ void ClientListenThreadMain(uint64_t id) {
 void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn node/ Storage Node
     std::unique_ptr<zmq::message_t> message_ptr;
     std::unique_ptr<std::string> message_string_ptr;
+    MOT::TxnManager* txnMan;
     while(true) {
         client_listen_message_queue.wait_dequeue(message_ptr);
         if(message_ptr != nullptr && message_ptr->size() > 0) {
@@ -2580,6 +2617,18 @@ void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn nod
             msg_ptr->ParseFromZeroCopyStream(&gzipStream);
             if(msg_ptr->type_case() == proto::Message::TypeCase::kReplyTxnResultToClient) {
                 //wake up local thread and return the commit result
+                auto& txn = msg_ptr->txn();
+
+                if(txn_map.get_value(txn.txn_id(), txnMan)) {
+                    if(txn.txn_state() == proto::TxnState::Commit) {
+                        txnMan->commit_state = MOT::RC::RC_OK;
+                    }
+                    else{
+                        txnMan->commit_state = MOT::RC::RC_ABORT;
+                    }
+                    txnMan->cv.notify_all();
+                    txn_map.remove(txn.txn_id());
+                }
             }
             else if(msg_ptr->type_case() == proto::Message::TypeCase::kClientReadResponse) {
                 //wake up local thread and return the read result
@@ -2662,8 +2711,8 @@ std::shared_ptr<zmq::context_t> storage_send_context, storage_listen_context;
 std::shared_ptr<zmq::socket_t> storage_send_socket, storage_listen_socket;
 
 std::atomic<bool> storage_init_ok_flag(false);
-std::atomic<uint64_t> update_epoch(0), current_epoch(0), shoule_update_txn_num(0), updated_txn_num(0);
-uint64_t start_time_ll;
+std::atomic<uint64_t> update_epoch(0), current_epoch(5), shoule_update_txn_num(0), updated_txn_num(0);
+uint64_t start_time_ll, start_physical_epoch = 1;
 struct timeval start_time;
 
 void StorageSendThreadMain(uint64_t id) {
@@ -2690,6 +2739,19 @@ void StorageListenThreadMain(uint64_t id) {
     }
 }
 
+proto::Node dest_node, src_node;
+
+void SendPullRequest(uint64_t epoch_id) {
+    auto* msg = std::make_unique<proto::Message>();
+    auto* request = msg->mutable_storage_pull_request();
+    request->mutable_src_node()->CopyFrom(src_node);
+    request->mutable_dest_node()->CopyFrom(dest_node);
+    request->set_epoch_id(epoch_id);
+    auto serialized_str = Gzip(std::move(msg));
+    storage_send_message_queue.enqueue(std::move(std::make_unique<pack_params>(serialized_str, 0, 0));
+    storage_send_message_queue.enqueue(std::move(std::make_unique<pack_params>(nullptr, 0, 0));
+}
+
 void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from Txn node/ Storage Node
     std::unique_ptr<zmq::message_t> message_ptr;
     std::unique_ptr<std::string> message_string_ptr;
@@ -2708,10 +2770,11 @@ void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from
                 auto& response = msg_ptr->storage_pull_response();
                 if(response.result() == proto::Result::Fail) {
                     //Send pull request to another server or wait a few seconds
+                    SendPullRequest(response.epoch_id());
                     continue;
                 } 
                 if(response.epoch_id() != update_epoch.load()) {
-                    //cache
+                    //cache the log
                     continue;
                 }
                 shoule_update_txn_num.store(response.txn_num());
@@ -2734,13 +2797,87 @@ void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from
 } 
 
 void StorageUpdaterThreadMain(uint64_t id) {
+    MOT::SessionContext* session_context = MOT::GetSessionManager()->
+        CreateSessionContext(IS_PGXC_COORDINATOR, 0, nullptr, INVALID_CONNECTION_ID);
+    MOT::TxnManager* txn_manager = session_context->GetTxnManager();
     auto txn_ptr = std::make_unique<proto::Transaction>();
     while(true) {
-        storage_read_queue.wait_dequeue(txn_ptr);
+        storage_update_queue.wait_dequeue(txn_ptr);
         //handle txn read request
         if(txn_ptr != nullptr) {
+            // write in single transaction
+            // lock all of the txn's rows
+            for (auto row_it = txn_ptr->row().begin(); row_it != txn_ptr->row().end(); ++row_it) {
+                MOT::Table* table = MOTAdaptor::m_engine->GetTableManager()->GetTable(row_it->table_name());
+                size_t key_length = row_it->key().length();
+                MOT::Key* key = nullptr;
+                key->CpKey((uint8_t*)row_it->key().c_str(), key_length);
+                MOT::Row* row = nullptr;
+                MOT::RC res = table->FindRow(key, row ,0);
+                if (res != MOT::RC_OK) {
+                    // look up fail!~
+                }
+                if (row_it->op_type() == proto::OpType::Update || row_it->op_type() == proto::OpType::Delete) {
+                    row->LockRow();
+                }
+            }
             
-            updated_txn_num.fetch_add(1);
+            // process operation
+            for (auto row_it = txn_ptr->row().begin(); row_it != txn_ptr->row().end(); ++row_it) {
+                // look for row
+                MOT::Table* table = MOTAdaptor::m_engine->GetTableManager()->GetTable(row_it->table_name());
+                size_t key_length = row_it->key().length();
+                MOT::Key* key = new MOT::Key(key_length);
+                key->CpKey((uint8_t*)row_it->key().c_str(), key_length);
+                MOT::Row* row = nullptr;
+                MOT::RC res = table->FindRow(key, row ,0);
+                if (res != MOT::RC_OK) {
+                    /* code */
+                }
+                if (row_it->op_type() == proto::OpType::Delete) {
+                    row->GetPrimarySentinel()->SetDirty();
+                    row->SetDeleteRow();
+                    row->SetCSN(txn_ptr->csn());
+                }
+                else if (row_it->op_type() == proto::OpType::Update) {
+                    row->CopyData((uint8_t*)row_it->data().c_str(),table->GetTupleSize());
+                    row->SetCSN(txn_ptr->csn());
+                    // for (auto col_it = row_it->column().begin(); col_it != row_it->column().end(); ++col_it) {
+                    //     row->SetValueVariable(col_it->id(), col_it->value().c_str(), col_it->value().length()); // 
+                    // }
+                }
+                else if (row_it->op_type() == proto::OpType::Insert) {
+                    row = table->CreateNewRow();
+                    row->CopyData((uint8_t*)row_it->data().c_str(),table->GetTupleSize());
+                    MOT::RC res = table->InsertRow(row, txn_manager);
+                    if ((res != MOT::RC_OK) && (res != MOT::RC_UNIQUE_VIOLATION)) {
+                        MOT_REPORT_ERROR(
+                            MOT_ERROR_OOM, "Insert Row ", "Failed to insert new row for table %s", table->GetLongTableName().c_str());
+                    }
+                }
+            }
+            txn_manager->SetCommitSequenceNumber(txn_ptr->csn());
+            txn_manager->TaasLogCommit(); // write change时会写入csn
+            
+            // release 
+            for (auto row_it = txn_ptr->row().begin(); row_it != txn_ptr->row().end(); ++row_it) {
+                MOT::Table* table = MOTAdaptor::m_engine->GetTableManager()->GetTable(row_it->table_name());
+                MOT::Row* row = nullptr;
+                size_t key_length = row_it->key().length();
+                MOT::Key* key = new MOT::Key(key_length);
+                key->CpKey((uint8_t*)row_it->key().c_str(), key_length);
+                MOT::RC res = table->FindRow(key, row ,0);
+                if (res != MOT::RC_OK) {
+                    /* code */
+                }
+                if (row_it->op_type() == proto::OpType::Update || row_it->op_type() == proto::OpType::Delete) {
+                    row->ReleaseRow();
+                }
+            }
+            auto num = updated_txn_num.fetch_add(1);
+            if(num + 1 == shoule_update_txn_num.load()) { // update finish
+                update_epoch.fetch_add(1);
+            }
         }
     }
 }
@@ -2769,6 +2906,9 @@ void StorageInit() {
     storage_listen_socket->setsockopt(ZMQ_RCVHWM, &queue_length, sizeof(queue_length));
     storage_listen_socket->bind("tcp://*:5554");
 
+
+    dest_node.set_ip(kTxnNodeIp[0]);
+    src_node.set_ip(kLocalIp);
 }
 
 uint64_t GetSleeptime(){
@@ -2788,6 +2928,10 @@ uint64_t GetSleeptime(){
     } 
 }
 
+//atomic change 
+//change txn node ip 
+//dest ip
+//
 void StorageManagerThreadMain(uint64_t id) { //handle other status
     StorageInit();
     storage_init_ok_flag.store(true);
@@ -2803,8 +2947,10 @@ void StorageManagerThreadMain(uint64_t id) { //handle other status
     usleep(sleep_time - start_time_ll);
     gettimeofday(&start_time, NULL);
     start_time_ll = start_time.tv_sec * 1000000 + start_time.tv_usec;
-
+    usleep(50000);
     while(true) {
-        usleep(10000);
+        usleep(GetSleeptime());
+        current_epoch.fetch_add(1);
+        SendPullRequest(current_epoch.load() - 5); //delay 5 epoch
     }
 }

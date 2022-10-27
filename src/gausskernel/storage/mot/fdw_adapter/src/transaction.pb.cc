@@ -125,25 +125,26 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 };
 
 const char descriptor_table_protodef_proto_2ftransaction_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\027proto/transaction.proto\022\005proto\"#\n\006Colu"
-  "mn\022\n\n\002id\030\001 \001(\r\022\r\n\005value\030\002 \001(\014\"s\n\003Row\022\036\n\007"
-  "op_type\030\001 \001(\0162\r.proto.OpType\022\022\n\ntable_na"
-  "me\030\002 \001(\t\022\013\n\003key\030\003 \001(\014\022\014\n\004data\030\004 \001(\014\022\035\n\006c"
-  "olumn\030\005 \003(\0132\r.proto.Column\"\365\001\n\013Transacti"
-  "on\022\027\n\003row\030\001 \003(\0132\n.proto.Row\022\023\n\013start_epo"
-  "ch\030\002 \001(\004\022\024\n\014commit_epoch\030\003 \001(\004\022\013\n\003csn\030\004 "
-  "\001(\004\022\021\n\tserver_ip\030\005 \001(\t\022\021\n\tserver_id\030\006 \001("
-  "\r\022\021\n\tclient_ip\030\007 \001(\t\022\025\n\rclient_txn_id\030\010 "
-  "\001(\004\022 \n\010txn_type\030\t \001(\0162\016.proto.TxnType\022#\n"
-  "\ntxn_status\030\n \001(\0162\017.proto.TxnState*\037\n\006Re"
-  "sult\022\010\n\004Fail\020\000\022\013\n\007Success\020\001*Q\n\007TxnType\022\r"
-  "\n\tClientTxn\020\000\022\023\n\017RemoteServerTxn\020\001\022\020\n\014Ep"
-  "ochEndFlag\020\002\022\020\n\014CommittedTxn\020\003*,\n\010TxnSta"
-  "te\022\t\n\005Empty\020\000\022\t\n\005Abort\020\001\022\n\n\006Commit\020\002*6\n\006"
-  "OpType\022\010\n\004Read\020\000\022\n\n\006Insert\020\001\022\n\n\006Update\020\002"
-  "\022\n\n\006Delete\020\003b\006proto3"
+  "\n\027proto/transaction.proto\022\005proto\032\020proto/"
+  "node.proto\"#\n\006Column\022\n\n\002id\030\001 \001(\r\022\r\n\005valu"
+  "e\030\002 \001(\014\"s\n\003Row\022\036\n\007op_type\030\001 \001(\0162\r.proto."
+  "OpType\022\022\n\ntable_name\030\002 \001(\t\022\013\n\003key\030\003 \001(\014\022"
+  "\014\n\004data\030\004 \001(\014\022\035\n\006column\030\005 \003(\0132\r.proto.Co"
+  "lumn\"\365\001\n\013Transaction\022\027\n\003row\030\001 \003(\0132\n.prot"
+  "o.Row\022\023\n\013start_epoch\030\002 \001(\004\022\024\n\014commit_epo"
+  "ch\030\003 \001(\004\022\013\n\003csn\030\004 \001(\004\022\021\n\tserver_ip\030\005 \001(\t"
+  "\022\021\n\tserver_id\030\006 \001(\r\022\021\n\tclient_ip\030\007 \001(\t\022\025"
+  "\n\rclient_txn_id\030\010 \001(\004\022 \n\010txn_type\030\t \001(\0162"
+  "\016.proto.TxnType\022#\n\ntxn_status\030\n \001(\0162\017.pr"
+  "oto.TxnState*\037\n\006Result\022\010\n\004Fail\020\000\022\013\n\007Succ"
+  "ess\020\001*Q\n\007TxnType\022\r\n\tClientTxn\020\000\022\023\n\017Remot"
+  "eServerTxn\020\001\022\020\n\014EpochEndFlag\020\002\022\020\n\014Commit"
+  "tedTxn\020\003*,\n\010TxnState\022\t\n\005Empty\020\000\022\t\n\005Abort"
+  "\020\001\022\n\n\006Commit\020\002*6\n\006OpType\022\010\n\004Read\020\000\022\n\n\006In"
+  "sert\020\001\022\n\n\006Update\020\002\022\n\n\006Delete\020\003b\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_proto_2ftransaction_2eproto_deps[1] = {
+  &::descriptor_table_proto_2fnode_2eproto,
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_proto_2ftransaction_2eproto_sccs[3] = {
   &scc_info_Column_proto_2ftransaction_2eproto.base,
@@ -153,8 +154,8 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_pro
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_proto_2ftransaction_2eproto_once;
 static bool descriptor_table_proto_2ftransaction_2eproto_initialized = false;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_proto_2ftransaction_2eproto = {
-  &descriptor_table_proto_2ftransaction_2eproto_initialized, descriptor_table_protodef_proto_2ftransaction_2eproto, "proto/transaction.proto", 660,
-  &descriptor_table_proto_2ftransaction_2eproto_once, descriptor_table_proto_2ftransaction_2eproto_sccs, descriptor_table_proto_2ftransaction_2eproto_deps, 3, 0,
+  &descriptor_table_proto_2ftransaction_2eproto_initialized, descriptor_table_protodef_proto_2ftransaction_2eproto, "proto/transaction.proto", 678,
+  &descriptor_table_proto_2ftransaction_2eproto_once, descriptor_table_proto_2ftransaction_2eproto_sccs, descriptor_table_proto_2ftransaction_2eproto_deps, 3, 1,
   schemas, file_default_instances, TableStruct_proto_2ftransaction_2eproto::offsets,
   file_level_metadata_proto_2ftransaction_2eproto, 3, file_level_enum_descriptors_proto_2ftransaction_2eproto, file_level_service_descriptors_proto_2ftransaction_2eproto,
 };

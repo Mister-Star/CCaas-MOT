@@ -574,6 +574,9 @@ public:
     //ADDBY TAAS
     RC commit_state;
     std::condition_variable cv;
+    void TaasLogCommit();
+
+    
 };
 }  // namespace MOT
 

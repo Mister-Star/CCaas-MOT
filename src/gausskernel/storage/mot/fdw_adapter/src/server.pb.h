@@ -33,6 +33,7 @@
 #include <google/protobuf/extension_set.h>  // IWYU pragma: export
 #include <google/protobuf/unknown_field_set.h>
 #include "proto/transaction.pb.h"
+#include "proto/node.pb.h"
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
 #define PROTOBUF_INTERNAL_EXPORT_proto_2fserver_2eproto
@@ -253,9 +254,41 @@ class ReplyTransactionToClient :
   // accessors -------------------------------------------------------
 
   enum : int {
+    kSendNodeFieldNumber = 3,
+    kRecvNodeFieldNumber = 4,
     kClientTxnIdFieldNumber = 1,
     kTxnStatusFieldNumber = 2,
   };
+  // .proto.Node send_node = 3;
+  bool has_send_node() const;
+  private:
+  bool _internal_has_send_node() const;
+  public:
+  void clear_send_node();
+  const ::proto::Node& send_node() const;
+  ::proto::Node* release_send_node();
+  ::proto::Node* mutable_send_node();
+  void set_allocated_send_node(::proto::Node* send_node);
+  private:
+  const ::proto::Node& _internal_send_node() const;
+  ::proto::Node* _internal_mutable_send_node();
+  public:
+
+  // .proto.Node recv_node = 4;
+  bool has_recv_node() const;
+  private:
+  bool _internal_has_recv_node() const;
+  public:
+  void clear_recv_node();
+  const ::proto::Node& recv_node() const;
+  ::proto::Node* release_recv_node();
+  ::proto::Node* mutable_recv_node();
+  void set_allocated_recv_node(::proto::Node* recv_node);
+  private:
+  const ::proto::Node& _internal_recv_node() const;
+  ::proto::Node* _internal_mutable_recv_node();
+  public:
+
   // uint64 client_txn_id = 1;
   void clear_client_txn_id();
   ::PROTOBUF_NAMESPACE_ID::uint64 client_txn_id() const;
@@ -279,6 +312,8 @@ class ReplyTransactionToClient :
   class _Internal;
 
   ::PROTOBUF_NAMESPACE_ID::internal::InternalMetadataWithArena _internal_metadata_;
+  ::proto::Node* send_node_;
+  ::proto::Node* recv_node_;
   ::PROTOBUF_NAMESPACE_ID::uint64 client_txn_id_;
   int txn_status_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -3631,6 +3666,114 @@ inline void ReplyTransactionToClient::_internal_set_txn_status(::proto::TxnState
 inline void ReplyTransactionToClient::set_txn_status(::proto::TxnState value) {
   _internal_set_txn_status(value);
   // @@protoc_insertion_point(field_set:proto.ReplyTransactionToClient.txn_status)
+}
+
+// .proto.Node send_node = 3;
+inline bool ReplyTransactionToClient::_internal_has_send_node() const {
+  return this != internal_default_instance() && send_node_ != nullptr;
+}
+inline bool ReplyTransactionToClient::has_send_node() const {
+  return _internal_has_send_node();
+}
+inline const ::proto::Node& ReplyTransactionToClient::_internal_send_node() const {
+  const ::proto::Node* p = send_node_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::proto::Node*>(
+      &::proto::_Node_default_instance_);
+}
+inline const ::proto::Node& ReplyTransactionToClient::send_node() const {
+  // @@protoc_insertion_point(field_get:proto.ReplyTransactionToClient.send_node)
+  return _internal_send_node();
+}
+inline ::proto::Node* ReplyTransactionToClient::release_send_node() {
+  // @@protoc_insertion_point(field_release:proto.ReplyTransactionToClient.send_node)
+  
+  ::proto::Node* temp = send_node_;
+  send_node_ = nullptr;
+  return temp;
+}
+inline ::proto::Node* ReplyTransactionToClient::_internal_mutable_send_node() {
+  
+  if (send_node_ == nullptr) {
+    auto* p = CreateMaybeMessage<::proto::Node>(GetArenaNoVirtual());
+    send_node_ = p;
+  }
+  return send_node_;
+}
+inline ::proto::Node* ReplyTransactionToClient::mutable_send_node() {
+  // @@protoc_insertion_point(field_mutable:proto.ReplyTransactionToClient.send_node)
+  return _internal_mutable_send_node();
+}
+inline void ReplyTransactionToClient::set_allocated_send_node(::proto::Node* send_node) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(send_node_);
+  }
+  if (send_node) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena = nullptr;
+    if (message_arena != submessage_arena) {
+      send_node = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, send_node, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  send_node_ = send_node;
+  // @@protoc_insertion_point(field_set_allocated:proto.ReplyTransactionToClient.send_node)
+}
+
+// .proto.Node recv_node = 4;
+inline bool ReplyTransactionToClient::_internal_has_recv_node() const {
+  return this != internal_default_instance() && recv_node_ != nullptr;
+}
+inline bool ReplyTransactionToClient::has_recv_node() const {
+  return _internal_has_recv_node();
+}
+inline const ::proto::Node& ReplyTransactionToClient::_internal_recv_node() const {
+  const ::proto::Node* p = recv_node_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::proto::Node*>(
+      &::proto::_Node_default_instance_);
+}
+inline const ::proto::Node& ReplyTransactionToClient::recv_node() const {
+  // @@protoc_insertion_point(field_get:proto.ReplyTransactionToClient.recv_node)
+  return _internal_recv_node();
+}
+inline ::proto::Node* ReplyTransactionToClient::release_recv_node() {
+  // @@protoc_insertion_point(field_release:proto.ReplyTransactionToClient.recv_node)
+  
+  ::proto::Node* temp = recv_node_;
+  recv_node_ = nullptr;
+  return temp;
+}
+inline ::proto::Node* ReplyTransactionToClient::_internal_mutable_recv_node() {
+  
+  if (recv_node_ == nullptr) {
+    auto* p = CreateMaybeMessage<::proto::Node>(GetArenaNoVirtual());
+    recv_node_ = p;
+  }
+  return recv_node_;
+}
+inline ::proto::Node* ReplyTransactionToClient::mutable_recv_node() {
+  // @@protoc_insertion_point(field_mutable:proto.ReplyTransactionToClient.recv_node)
+  return _internal_mutable_recv_node();
+}
+inline void ReplyTransactionToClient::set_allocated_recv_node(::proto::Node* recv_node) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(recv_node_);
+  }
+  if (recv_node) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena = nullptr;
+    if (message_arena != submessage_arena) {
+      recv_node = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, recv_node, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  recv_node_ = recv_node;
+  // @@protoc_insertion_point(field_set_allocated:proto.ReplyTransactionToClient.recv_node)
 }
 
 // -------------------------------------------------------------------
