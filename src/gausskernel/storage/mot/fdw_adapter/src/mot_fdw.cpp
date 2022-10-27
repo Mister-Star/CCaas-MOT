@@ -2442,21 +2442,37 @@ void FDWMultiRaftThreadMain(uint64_t id) {
 
 
 //ADDBY TAAS
-void FDWClientListenerThreadMain(uint64_t id){
+void FDWClientSenderThreadMain(uint64_t id) {
+    ClientSendThreadMain(id);
 }
-void FDWClientManagerThreadMain(uint64_t id){
+void FDWClientListenerThreadMain(uint64_t id) {
+    ClientListenThreadMain(id);
 }
-void FDWClientSenderThreadMain(uint64_t id){
+void FDWClientManagerThreadMain(uint64_t id) {
+    ClientManagerThreadMain(id);
 }
-void FDWStorageListenerThreadMain(uint64_t id){
+void FDWClientWorker1ThreadMain(uint64_t id) {
+    ClientWorker1ThreadMain(id);
 }
-void FDWStorageManagerThreadMain(uint64_t id){
+
+void FDWStorageSenderThreadMain(uint64_t id) {
+    StorageSendThreadMain(id);
 }
-void FDWStorageMessageManagerThreadMain(uint64_t id){
+void FDWStorageListenerThreadMain(uint64_t id) {
+    StorageListenThreadMain(id);
 }
-void FDWStorageReaderThreadMain(uint64_t id){
+void FDWStorageManagerThreadMain(uint64_t id) {
+    StorageManagerThreadMain(id);
 }
-void FDWStorageSenderThreadMain(uint64_t id){
+void FDWStorageMessageManagerThreadMain(uint64_t id) {
+    StorageMessageManagerThreadMain(id);
 }
-void FDWStorageUpdaterThreadMain(uint64_t id){
+void FDWStorageReaderThreadMain(uint64_t id) {
+    StorageReaderThreadMain(id);
+}
+void FDWStorageUpdaterThreadMain(uint64_t id) { 
+    StorageUpdaterThreadMain(id);
+}
+void FDWStorageWorker1ThreadMain(uint64_t id) {
+    StorageWorker1ThreadMain(id);
 }

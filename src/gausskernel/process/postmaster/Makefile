@@ -33,6 +33,8 @@ ifneq "$(MAKECMDGOALS)" "clean"
 endif
 OBJS = autovacuum.o bgwriter.o fork_process.o pgarch.o pgstat.o postmaster.o gaussdb_version.o\
 	startup.o syslogger.o walwriter.o\
+  taas_clientsender.o taas_clientlistener.o taas_clientmanager.o taas_clientworker1.o\
+  taas_storagelistener.o taas_storagemanager.o taas_storagemessagemanager.o taas_storagereader.o taas_storagesender.o taas_storageupdater.o taas_storageworker1.o\
   epochlogicaltimermanager.o epochphysicaltimermanager.o epochmessagecachemanager.o epochmessagemanager.o\
   epochsend.o epochlisten.o epochpack.o epochnotify.o epochunseri.o epochunpack.o epochmerge.o epochcommit.o epochrecordcommit.o tinyxml2.o\
   walwriterauxiliary.o checkpointer.o pgaudit.o alarmchecker.o \

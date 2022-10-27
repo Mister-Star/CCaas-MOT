@@ -81,6 +81,8 @@ Key* TxnManager::GetTxnKey(MOT::Index* index)
     }
     return new (buf) Key(index->GetAlignedKeyLength());
 }
+
+//ADDBY TAAS
 Key* TxnManager::GetTxnKey(MOT::Index* index, void* buf)
 {
     int size = index->GetAlignedKeyLength() + sizeof(Key);
@@ -259,22 +261,6 @@ void TxnManager::LitePrepare()
     m_redoLog.Prepare();
 }
 
-//ADDBY TAAS 
-void TxnManager::TaasLogCommit() {
-    m_occManager.updateInsertSetSize(this);
-    m_redoLog.Commit();
-    m_occManager.WriteChanges(this);
-
-    if (GetGlobalConfiguration().m_enableCheckpoint) {
-        GetCheckpointManager()->EndCommit(this);
-    }
-
-    if (!GetGlobalConfiguration().m_enableRedoLog) {
-        m_occManager.ReleaseLocks(this);
-    }
-    MOT::DbSessionStatisticsProvider::GetInstance().AddCommitTxn();
-}
-
 void TxnManager::CommitInternal()
 {
     if (m_csn == CSNManager::INVALID_CSN) {
@@ -294,6 +280,22 @@ void TxnManager::CommitInternal()
     }
 }
 
+//ADDBY TAAS 
+void TxnManager::TaasLogCommit() {
+    m_occManager.updateInsertSetSize(this);
+    m_redoLog.Commit();
+    m_occManager.WriteChanges(this);
+
+    if (GetGlobalConfiguration().m_enableCheckpoint) {
+        GetCheckpointManager()->EndCommit(this);
+    }
+
+    if (!GetGlobalConfiguration().m_enableRedoLog) {
+        m_occManager.ReleaseLocks(this);
+    }
+    MOT::DbSessionStatisticsProvider::GetInstance().AddCommitTxn();
+}
+
 RC TxnManager::ValidateCommit()
 {
     // return m_occManager.ValidateOcc(this);
@@ -302,10 +304,10 @@ RC TxnManager::ValidateCommit()
     if(!MOTAdaptor::InsertTxntoLocalChangeSet(this)) {
         return RC::RC_ABORT;
     }
-    std::mutex mutex;
-    std::unique_lock lock(mutex);
-    cv.wait(lock, [this->commit_state](MOT::RC &commit_state){return commit_state != RC::RC_WAIT;});
-    return this->commit_state;
+    std::mutex _mutex;
+    std::unique_lock<std::mutex> _lock(_mutex);
+    cv.wait(_lock, [this](){return commit_state != RC::RC_WAIT;});
+    return commit_state;
 }
 
 void TxnManager::RecordCommit()

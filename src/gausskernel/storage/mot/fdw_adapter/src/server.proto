@@ -2,12 +2,12 @@ syntax = "proto3";
 
 package proto;
 
-import "proto/transaction.proto";
-import "proto/node.proto";
+import "transaction.proto";
+import "node.proto";
 
 message ReplyTransactionToClient { //return the result to client
   uint64 client_txn_id = 1;
-  TxnState txn_status = 2;
+  TxnState txn_state = 2;
   Node send_node = 3;
   Node recv_node = 4;
 }

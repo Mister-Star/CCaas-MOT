@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package proto;
-import "proto/node.proto";
+import "node.proto";
 
 enum Result {
   Fail = 0;
@@ -54,6 +54,6 @@ message Transaction{
   uint64 client_txn_id = 8; // used to identify which txn it is in client
 
   TxnType txn_type = 9;
-  TxnState txn_status = 10;
+  TxnState txn_state = 10;
 
 }

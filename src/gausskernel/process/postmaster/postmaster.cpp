@@ -242,6 +242,8 @@
 #include "storage/mot/mot_fdw.h"
 #include "postmaster/tinyxml2.h"
 #include "postmaster/epoch.h"
+#include "postmaster/client.h"
+#include "postmaster/storage.h"
 
 #include <string>
 #include<vector>
@@ -10105,19 +10107,19 @@ int GaussDbAuxiliaryThreadMain(knl_thread_arg* arg)
             proc_exit(1);
             break;
         case CLIENT_WORKER1:
-            ClientSenderMain();
+            ClientWorker1Main();
             proc_exit(1);
             break;
         case CLIENT_WORKER2:
-            ClientSenderMain();
+            ClientWorker1Main();
             proc_exit(1);
             break;
         case CLIENT_WORKER3:
-            ClientSenderMain();
+            ClientWorker1Main();
             proc_exit(1);
             break;
         case CLIENT_WORKER4:
-            ClientSenderMain();
+            ClientWorker1Main();
             proc_exit(1);
             break;
         
@@ -10146,19 +10148,19 @@ int GaussDbAuxiliaryThreadMain(knl_thread_arg* arg)
             proc_exit(1);
             break;
         case STOREAGE_WORKER1:
-            ClientSenderMain();
+            StorageWorker1Main();
             proc_exit(1);
             break;
         case STOREAGE_WORKER2:
-            ClientSenderMain();
+            StorageWorker1Main();
             proc_exit(1);
             break;
         case STOREAGE_WORKER3:
-            ClientSenderMain();
+            StorageWorker1Main();
             proc_exit(1);
             break;
         case STOREAGE_WORKER4:
-            ClientSenderMain();
+            StorageWorker1Main();
             proc_exit(1);
             break;
 
@@ -10887,9 +10889,9 @@ static ThreadMetaData GaussdbThreadGate[] = {
     { GaussDbThreadMain<CLIENT_LISTENER>, CLIENT_LISTENER, "clientlistener", "client listener"},
     { GaussDbThreadMain<CLIENT_MANAGER>, CLIENT_MANAGER, "clientmanager", "client manager"},
     { GaussDbThreadMain<CLIENT_WORKER1>, CLIENT_WORKER1, "clientworker1", "client worker1"},
-    { GaussDbThreadMain<CLIENT_WORKER2>, CLIENT_WORKER2, "clientworker1", "client worker2"},
-    { GaussDbThreadMain<CLIENT_WORKER3>, CLIENT_WORKER3, "clientworker1", "client worker3"},
-    { GaussDbThreadMain<CLIENT_WORKER4>, CLIENT_WORKER4, "clientworker1", "client worker4"},
+    { GaussDbThreadMain<CLIENT_WORKER2>, CLIENT_WORKER2, "clientworker2", "client worker2"},
+    { GaussDbThreadMain<CLIENT_WORKER3>, CLIENT_WORKER3, "clientworker3", "client worker3"},
+    { GaussDbThreadMain<CLIENT_WORKER4>, CLIENT_WORKER4, "clientworker4", "client worker4"},
 
     { GaussDbThreadMain<STOREAGE_SENDER>, STOREAGE_SENDER, "storagesender", "storage sender"},
     { GaussDbThreadMain<STOREAGE_LISTENER>, STOREAGE_LISTENER, "storagelistener", "storage listener"},
@@ -11986,7 +11988,7 @@ void TaasGetServerInfo(){
     tinyxml2::XMLElement *index_element=root->FirstChildElement("txn_node_ip");  
 	int symbol_local_or_remote=0;
     while (index_element){
-        tinyxml2::XMLElement *ip_port=index_element->FirstChildElement("ip");
+        tinyxml2::XMLElement *ip_port=index_element->FirstChildElement("txn_ip");
         const char* content;
 
         while(ip_port){
@@ -12001,10 +12003,10 @@ void TaasGetServerInfo(){
         symbol_local_or_remote++;
     }
 
-    index_element=root->FirstChildElement("txn_node_ip");
+    index_element=root->FirstChildElement("storage_node_ip");
     symbol_local_or_remote = 0;
     while (index_element){
-        tinyxml2::XMLElement *ip_port=index_element->FirstChildElement("cache_ip");
+        tinyxml2::XMLElement *ip_port=index_element->FirstChildElement("storage_ip");
         const char* content;
         while(ip_port){
             content=ip_port->GetText();

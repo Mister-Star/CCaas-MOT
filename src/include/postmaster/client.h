@@ -4,11 +4,12 @@
 #include <thread>
 #include <vector>
 extern std::vector<uint64_t> 
-    client_listener_thread_ids, client_sender_thread_ids, client_manager_thread_ids;
+    client_listener_thread_ids, client_sender_thread_ids, client_manager_thread_ids, client_worker1_thread_ids;
 
 
 extern void ClientListenerMain(void);
 extern void ClientSenderMain(void);
 extern void ClientManagerMain(void);
+extern void ClientWorker1Main(void);
 
 #endif

@@ -575,6 +575,49 @@ void OccTransactionManager::CleanUp()
 }
 
 //ADDBY TAAS
+
+void OccTransactionManager::updateInsertSetSize(TxnManager * txMan){
+    TxnAccess *tx = txMan->m_accessMgr.Get();
+    const uint32_t rowCount = tx->m_rowCnt;
+
+    m_writeSetSize = 0;
+    m_rowsSetSize = 0;
+    m_deleteSetSize = 0;
+    m_insertSetSize = 0;
+    m_txnCounter++;
+
+    TxnOrderedSet_t &orderedSet = tx->GetOrderedRowSet();
+    MOT_ASSERT(rowCount == orderedSet.size());
+
+    for (const auto &raPair : orderedSet)
+    {
+        const Access *ac = raPair.second;
+        if (ac->m_params.IsPrimarySentinel())
+        {
+            m_rowsSetSize++;
+        }
+        switch (ac->m_type)
+        {
+            case WR:
+                m_writeSetSize++;
+                break;
+            case DEL:
+                m_writeSetSize++;
+                m_deleteSetSize++;
+                break;
+            case INS:
+                m_insertSetSize++;
+                m_writeSetSize++;
+                break;
+            case RD: /// now only support the "READ-COMMITTED" isolation
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+
 bool OccTransactionManager::IsReadOnly(TxnManager * txMan){
     return m_writeSetSize == 0;
 }

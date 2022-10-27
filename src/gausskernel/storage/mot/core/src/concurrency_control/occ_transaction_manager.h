@@ -207,6 +207,7 @@ private:
     ///ADDBY TAAS
 public:
     bool IsReadOnly(TxnManager * txMan);
+    void updateInsertSetSize(TxnManager * txMan);
 };
 }  // namespace MOT
 

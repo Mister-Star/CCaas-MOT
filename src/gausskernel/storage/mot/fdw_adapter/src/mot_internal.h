@@ -62,6 +62,21 @@
 using std::map;
 using std::string;
 
+extern void ClientSendThreadMain(uint64_t id);
+extern void ClientListenThreadMain(uint64_t id);
+extern void ClientManagerThreadMain(uint64_t id);
+extern void ClientWorker1ThreadMain(uint64_t id);
+
+extern void StorageSendThreadMain(uint64_t id);
+extern void StorageListenThreadMain(uint64_t id);
+extern void StorageMessageManagerThreadMain(uint64_t id);
+extern void StorageUpdaterThreadMain(uint64_t id);
+extern void StorageReaderThreadMain(uint64_t id);
+extern void StorageManagerThreadMain(uint64_t id);
+extern void StorageWorker1ThreadMain(uint64_t id);
+
+
+
 #define MIN_DYNAMIC_PROCESS_MEMORY 2 * 1024 * 1024
 
 #define MOT_INSERT_FAILED_MSG "Insert failed"
@@ -178,7 +193,7 @@ struct MOTFdwState_St {
 class MOTAdaptor {
 public:
 //ADDBY TAAS
-    bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan);
+    static bool InsertTxntoLocalChangeSet(MOT::TxnManager* txMan);
 
     static void Init();
     static void Destroy();
