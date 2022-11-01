@@ -5064,10 +5064,11 @@ static void reaper(SIGNAL_ARGS)
             
             //ADDBY NEU
             ereport(LOG,(errmsg("============================Reaper=================================")));
-            GenerateEpochThreads();
+            // GenerateEpochThreads();
             ereport(LOG,(errmsg("============================Reaper=================================")));
+
             //ADDBY TAAS creat threads
-            GetServerInfo();
+            TaasGetServerInfo();
             ereport(LOG,(errmsg("============================TAAS Reaper=================================")));
             GenerateClientThreads();
             ereport(LOG,(errmsg("============================TAAS Reaper=================================")));
@@ -11901,7 +11902,7 @@ void GenerateClientThreads(){
     }
     for (int i = 0 ; i < 1 ; i++){
         g_instance.pid_cxt.ClientSenderPIDS[i] = initialize_util_thread(CLIENT_SENDER); 
-        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.ClientSenderPIDS[i]);
+        client_sender_thread_ids.push_back(g_instance.pid_cxt.ClientSenderPIDS[i]);
     }
 
     g_instance.pid_cxt.ClientListenerPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
@@ -11910,7 +11911,7 @@ void GenerateClientThreads(){
     }
     for (int i = 0 ; i < 1 ; i++){
         g_instance.pid_cxt.ClientListenerPIDS[i] = initialize_util_thread(CLIENT_LISTENER); 
-        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.ClientListenerPIDS[i]);
+        client_listener_thread_ids.push_back(g_instance.pid_cxt.ClientListenerPIDS[i]);
     }
 
     g_instance.pid_cxt.ClientManagerPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
@@ -11919,7 +11920,17 @@ void GenerateClientThreads(){
     }
     for (int i = 0 ; i < 1 ; i++){
         g_instance.pid_cxt.ClientManagerPIDS[i] = initialize_util_thread(CLIENT_MANAGER); 
-        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.ClientManagerPIDS[i]);
+        client_manager_thread_ids.push_back(g_instance.pid_cxt.ClientManagerPIDS[i]);
+    }
+
+
+    g_instance.pid_cxt.ClientWorker1PIDS = (ThreadId*)palloc( 4 * sizeof(ThreadId));
+    if (g_instance.pid_cxt.ClientWorker1PIDS == NULL) {
+        ereport(FATAL, (errmsg("communicator palloc ClientWorker1PIDS mempry failed")));
+    }
+    for (int i = 0 ; i < 4 ; i++){
+        g_instance.pid_cxt.ClientWorker1PIDS[i] = initialize_util_thread(CLIENT_WORKER1); 
+        client_worker1_thread_ids.push_back(g_instance.pid_cxt.ClientWorker1PIDS[i]);
     }
 
 }
@@ -11931,7 +11942,7 @@ void GenerateStorageThreads(){
     }
     for (int i = 0 ; i < 1 ; i++){
         g_instance.pid_cxt.StorageSenderPIDS[i] = initialize_util_thread(STOREAGE_SENDER); 
-        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.StorageSenderPIDS[i]);
+        storage_sender_thread_ids.push_back(g_instance.pid_cxt.StorageSenderPIDS[i]);
     }
 
     g_instance.pid_cxt.StorageListenerPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
@@ -11940,7 +11951,16 @@ void GenerateStorageThreads(){
     }
     for (int i = 0 ; i < 1 ; i++){
         g_instance.pid_cxt.StorageListenerPIDS[i] = initialize_util_thread(STOREAGE_LISTENER); 
-        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.StorageListenerPIDS[i]);
+        storage_listener_thread_ids.push_back(g_instance.pid_cxt.StorageListenerPIDS[i]);
+    }
+
+    g_instance.pid_cxt.StorageWorker1PIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
+    if (g_instance.pid_cxt.StorageWorker1PIDS == NULL) {
+        ereport(FATAL, (errmsg("communicator palloc StorageWorker1PIDS mempry failed")));
+    }
+    for (int i = 0 ; i < 1 ; i++){
+        g_instance.pid_cxt.StorageWorker1PIDS[i] = initialize_util_thread(STOREAGE_WORKER1); 
+        storage_worker1_thread_ids.push_back(g_instance.pid_cxt.StorageWorker1PIDS[i]);
     }
 
     g_instance.pid_cxt.StorageManagerPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
@@ -11949,16 +11969,16 @@ void GenerateStorageThreads(){
     }
     for (int i = 0 ; i < 1 ; i++){
         g_instance.pid_cxt.StorageManagerPIDS[i] = initialize_util_thread(STOREAGE_MANAGER); 
-        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.StorageManagerPIDS[i]);
+        storage_manager_thread_ids.push_back(g_instance.pid_cxt.StorageManagerPIDS[i]);
     }
 
-    g_instance.pid_cxt.StorageMessageManagerPIDS = (ThreadId*)palloc( 1 * sizeof(ThreadId));
+    g_instance.pid_cxt.StorageMessageManagerPIDS = (ThreadId*)palloc( 2 * sizeof(ThreadId));
     if (g_instance.pid_cxt.StorageMessageManagerPIDS == NULL) {
         ereport(FATAL, (errmsg("communicator palloc StorageMessageManagerPIDS mempry failed")));
     }
     for (int i = 0 ; i < 2 ; i++){
         g_instance.pid_cxt.StorageMessageManagerPIDS[i] = initialize_util_thread(STOREAGE_MESSAGE_MANAGER); 
-        epoch_logical_thread_ids.push_back(g_instance.pid_cxt.StorageMessageManagerPIDS[i]);
+        storage_message_manager_thread_ids.push_back(g_instance.pid_cxt.StorageMessageManagerPIDS[i]);
     }
 
     g_instance.pid_cxt.StorageUpdaterPIDS = (ThreadId*)palloc( kStorageUpdaterThreadNum * sizeof(ThreadId));
@@ -11967,7 +11987,7 @@ void GenerateStorageThreads(){
     }
     for (int i = 0 ; i < (int)kStorageUpdaterThreadNum ; i++){
         g_instance.pid_cxt.StorageUpdaterPIDS[i] = initialize_util_thread(STOREAGE_UPDATER); 
-        epoch_commit_thread_ids.push_back(g_instance.pid_cxt.StorageUpdaterPIDS[i]);
+        storage_updater_thread_ids.push_back(g_instance.pid_cxt.StorageUpdaterPIDS[i]);
     }
 
     g_instance.pid_cxt.StorageReaderPIDS = (ThreadId*)palloc( kStorageReaderThreadNum * sizeof(ThreadId));
@@ -11976,8 +11996,10 @@ void GenerateStorageThreads(){
     }
     for (int i = 0 ; i < (int)kStorageReaderThreadNum ; i++){
         g_instance.pid_cxt.StorageReaderPIDS[i] = initialize_util_thread(STOREAGE_READER); 
-        epoch_commit_thread_ids.push_back(g_instance.pid_cxt.StorageUpdaterPIDS[i]);
+        storage_reader_thread_ids.push_back(g_instance.pid_cxt.StorageReaderPIDS[i]);
     }
+
+
 
 }
 
@@ -12041,8 +12063,11 @@ void TaasGetServerInfo(){
     kLocalIp = temp3;
 
     ereport(LOG, (errmsg("========================================================")));
-    for(int i = 0; i < (int)kServerNum; i++ ){
-        ereport(LOG, (errmsg("ip: %s",kServerIp[i].c_str())));
+    for(int i = 0; i < (int)kTxnNodeIp.size(); i++ ){
+        ereport(LOG, (errmsg("ip: %s",kTxnNodeIp[i].c_str())));
+    }
+    for(int i = 0; i < (int)kStorageNodeIp.size(); i++ ){
+        ereport(LOG, (errmsg("ip: %s",kStorageNodeIp[i].c_str())));
     }
     ereport(LOG, (errmsg("server_num %d", (int)kServerNum)));
     ereport(LOG, (errmsg("local_ip_index %d", (int)local_ip_index)));

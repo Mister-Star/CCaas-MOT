@@ -2496,6 +2496,45 @@ std::string* Gzip(std::unique_ptr<proto::Message> && msg) {
     return serialized_str_ptr;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//Storage
+BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>> storage_update_queue;
+
+
 //**************************************************************************************************************************************************************************************************
 //*****                                                                                                                                                                                        *****
 //*****                                                                                                                                                                                        ***** 
@@ -2513,7 +2552,7 @@ std::shared_ptr<zmq::context_t> client_send_context, client_listen_context;
 std::shared_ptr<zmq::socket_t> client_send_socket, client_listen_socket;
 std::atomic<bool> client_init_ok_flag(false);
 ConcurrentHashMap<uint64_t, MOT::TxnManager*> txn_map;
-std::atomic<uint64_t> local_csn(1);
+std::atomic<uint64_t> local_csn(5);
 
 bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
     auto msg = std::make_unique<proto::Message>();
@@ -2533,20 +2572,17 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
         row = txn->add_row();
         if (access->m_type == MOT::RD) {
             op_type = proto::OpType::Read;
-            local_row = access->m_localRow;
         }
         if (access->m_type == MOT::WR){
             op_type = proto::OpType::Update;
-            local_row = access->m_localRow;
         }
         else if (access->m_type == MOT::INS){
             op_type = proto::OpType::Insert;
-            local_row = access->m_localInsertRow;
         }
         else if (access->m_type == MOT::DEL){
             op_type = proto::OpType::Delete;
-            local_row = access->m_localRow;
         }
+        local_row = access->m_localRow;
         if(local_row == nullptr || local_row->GetTable() == nullptr){
             return false;
         }
@@ -2564,6 +2600,7 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
     txn->set_client_ip(kLocalIp);
     txMan->SetCommitSequenceNumber(local_csn.fetch_add(1));
     txn->set_client_txn_id(txMan->GetCommitSequenceNumber());
+    txn->set_csn(txMan->GetCommitSequenceNumber());
     
     MOT::TxnManager* txnMan_ptr = nullptr;
     auto csn = txMan->GetCommitSequenceNumber();
@@ -2573,10 +2610,30 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
         txnMan_ptr->commit_state = MOT::RC::RC_ABORT;
         txnMan_ptr->cv.notify_all();
     }
+    MOT_LOG_INFO("MOTAdaprot 事务涉及 %llu 行数据 事务本地csn为 %llu", txn->row().size(), txn->client_txn_id());
+    //test
+    {
+        auto msg_temp = std::make_unique<proto::Message>();
+        auto txn_reply = msg_temp->mutable_reply_txn_result_to_client();
+        txn_reply->set_txn_state(proto::TxnState::Commit);
+        txn_reply->set_client_txn_id(txn->client_txn_id());
+        auto str_ptr = Gzip(std::move(msg_temp));
+        auto zmq_msg = std::make_unique<zmq::message_t>(static_cast<void*>(const_cast<char*>(str_ptr->data())),
+                    str_ptr->size(), string_free, static_cast<void*>(str_ptr));
 
-    auto* serialized_txn_str_ptr = Gzip(std::move(msg));
-    client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, serialized_txn_str_ptr)));
-    client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, nullptr)));
+        client_listen_message_queue.enqueue(std::move(zmq_msg));
+        client_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()));
+
+        storage_update_queue.enqueue(std::make_unique<proto::Transaction>(*(msg->release_txn())));
+        storage_update_queue.enqueue(std::move(nullptr));
+    }
+
+    // {
+    //     auto* serialized_txn_str_ptr = Gzip(std::move(msg));
+    //     client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, serialized_txn_str_ptr)));
+    //     client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, nullptr)));
+    
+    // }
     return true;
 }
 
@@ -2584,6 +2641,7 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
 
 
 void ClientSendThreadMain(uint64_t id) {
+    MOT_LOG_INFO("线程 ClientSendThreadMain 开始工作 %llu", id);
     std::unique_ptr<send_thread_params> params;
     std::unique_ptr<zmq::message_t> msg;
     while(client_init_ok_flag.load() == false) usleep(200);
@@ -2598,6 +2656,7 @@ void ClientSendThreadMain(uint64_t id) {
 }
 
 void ClientListenThreadMain(uint64_t id) {
+    MOT_LOG_INFO("线程 ClientListenThreadMain 开始工作 %llu", id);
     while(client_init_ok_flag.load() == false) usleep(200);
     while(true) {
         std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
@@ -2608,6 +2667,7 @@ void ClientListenThreadMain(uint64_t id) {
 }
 
 void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn node/ Storage Node
+    MOT_LOG_INFO("线程 ClientWorker1ThreadMain 开始工作 %llu", id);
     std::unique_ptr<zmq::message_t> message_ptr;
     std::unique_ptr<std::string> message_string_ptr;
     MOT::TxnManager* txnMan;
@@ -2621,18 +2681,24 @@ void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn nod
             msg_ptr->ParseFromZeroCopyStream(&gzipStream);
             if(msg_ptr->type_case() == proto::Message::TypeCase::kReplyTxnResultToClient) {
                 //wake up local thread and return the commit result
-                auto& txn = msg_ptr->txn();
+                auto& txn = msg_ptr->reply_txn_result_to_client();
                 auto csn = txn.client_txn_id();
                 if(txn_map.get_value(csn, txnMan)) {
                     if(txn.txn_state() == proto::TxnState::Commit) {
+                        usleep(10000);
                         txnMan->commit_state = MOT::RC::RC_OK;
                     }
                     else{
                         txnMan->commit_state = MOT::RC::RC_ABORT;
                     }
                     txnMan->cv.notify_all();
+                    MOT_LOG_INFO("唤醒 csn %llu, txn txnid %llu, txn_state %llu", csn, txnMan->GetCommitSequenceNumber(), txnMan->commit_state);
                     txn_map.remove(csn);
                 }
+                else {
+                    MOT_LOG_INFO("未找到 csn %llu", csn);
+                }
+
             }
             else if(msg_ptr->type_case() == proto::Message::TypeCase::kClientReadResponse) {
                 //wake up local thread and return the read result
@@ -2645,23 +2711,22 @@ void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn nod
     }
 } 
 
+
+
 void ClientInit() {
     //Client send
     client_send_context = std::make_shared<zmq::context_t>(1);
     client_send_socket = std::make_shared<zmq::socket_t>(*client_send_context, ZMQ_PUSH);
-    client_send_socket->connect("tcp://" + kServerIp[0] + ":5551"); 
+    client_send_socket->connect("tcp://" + kTxnNodeIp[0] + ":5551"); 
     
     //Client listen
-    int queue_length = 0;
     client_listen_context = std::make_shared<zmq::context_t>(1);
     client_listen_socket = std::make_shared<zmq::socket_t>(*client_listen_context, ZMQ_PULL);
-    client_listen_socket->setsockopt(ZMQ_SUBSCRIBE, "", 0);
-    client_listen_socket->setsockopt(ZMQ_RCVHWM, &queue_length, sizeof(queue_length));
     client_listen_socket->bind("tcp://*:5552");
-
 }
 
-void ClientManagerThreadMain(uint64_t) { //handle other status
+void ClientManagerThreadMain(uint64_t id) { //handle other status
+    MOT_LOG_INFO("线程 ClientManagerThreadMain 开始工作 %llu", id);
     ClientInit();
     client_init_ok_flag.store(true);
     auto msg_ptr = std::make_unique<proto::Message>();
@@ -2708,18 +2773,21 @@ BlockingConcurrentQueue<std::unique_ptr<zmq::message_t>> storage_listen_message_
 BlockingConcurrentQueue<std::unique_ptr<send_thread_params>> storage_send_message_queue;
 BlockingConcurrentQueue<std::unique_ptr<proto::Message>> storage_other_message_queue;
 BlockingConcurrentQueue<std::unique_ptr<proto::Message>> storage_read_queue;
-BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>> storage_update_queue;
+
 
 std::unique_ptr<std::mutex> storage_send_mutex, storage_listen_mutex;
-std::shared_ptr<zmq::context_t> storage_send_context, storage_listen_context;
-std::shared_ptr<zmq::socket_t> storage_send_socket, storage_listen_socket;
+std::shared_ptr<zmq::context_t> storage_send_context, storage_listen_context, storage_listen_context_sub_mod;
+std::shared_ptr<zmq::socket_t> storage_send_socket, storage_listen_socket, storage_listen_socket_sub_mod;
 
 std::atomic<bool> storage_init_ok_flag(false);
-std::atomic<uint64_t> update_epoch(0), current_epoch(5), shoule_update_txn_num(0), updated_txn_num(0);
-uint64_t start_time_ll, start_physical_epoch = 1;
+std::atomic<uint64_t> update_epoch(0), current_epoch(5);
+std::vector<std::unique_ptr<std::atomic<uint64_t>>> shoule_update_txn_num, updated_txn_num;
+
+uint64_t start_time_ll, start_physical_epoch = 1, cache_size = 10000;
 struct timeval start_time;
 
 void StorageSendThreadMain(uint64_t id) {
+    MOT_LOG_INFO("线程 StorageSendThreadMain 开始工作 %llu", id);
     std::unique_ptr<send_thread_params> params;
     std::unique_ptr<zmq::message_t> msg;
     while(storage_init_ok_flag.load() == false) usleep(200);
@@ -2734,6 +2802,7 @@ void StorageSendThreadMain(uint64_t id) {
 }
 
 void StorageListenThreadMain(uint64_t id) {
+    MOT_LOG_INFO("线程 StorageListenThreadMain 开始工作 %llu", id);
     while(storage_init_ok_flag.load() == false) usleep(200);
     while(true) {
         std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
@@ -2757,19 +2826,22 @@ void SendPullRequest(uint64_t epoch_id) {
 }
 
 void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from Txn node/ Storage Node
+    MOT_LOG_INFO("线程 StorageMessageManagerThreadMain 开始工作 %llu", id);
     std::unique_ptr<zmq::message_t> message_ptr;
+    std::unique_ptr<proto::Message> msg_ptr; 
     std::unique_ptr<std::string> message_string_ptr;
     auto txn = std::make_unique<proto::Transaction>();
+    uint64_t epoch, epoch_mod;
     while(true) {
         storage_listen_message_queue.wait_dequeue(message_ptr);
         if(message_ptr != nullptr && message_ptr->size() > 0) {
-            auto msg_ptr = std::make_unique<proto::Message>();
-            auto message_string_ptr = std::make_unique<std::string>(static_cast<const char*>(message_ptr->data()), message_ptr->size());
+            msg_ptr = std::make_unique<proto::Message>();
+            message_string_ptr = std::make_unique<std::string>(static_cast<const char*>(message_ptr->data()), message_ptr->size());
             google::protobuf::io::ArrayInputStream inputStream(message_string_ptr->data(), message_string_ptr->size());
             google::protobuf::io::GzipInputStream gzipStream(&inputStream);
             msg_ptr->ParseFromZeroCopyStream(&gzipStream);
 
-            if(msg_ptr->type_case() == proto::Message::TypeCase::kStoragePullResponse) {
+            if(msg_ptr->type_case() == proto::Message::TypeCase::kStoragePullResponse || msg_ptr->type_case() == proto::Message::TypeCase::kStoragePushResponse) {
                 //handle the log and update it in mot
                 auto& response = msg_ptr->storage_pull_response();
                 if(response.result() == proto::Result::Fail) {
@@ -2781,13 +2853,31 @@ void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from
                     //cache the log
                     continue;
                 }
-                shoule_update_txn_num.store(response.txn_num());
+                epoch = response.epoch_id();
+                epoch_mod = epoch % cache_size;
+                shoule_update_txn_num[epoch_mod]->store(response.txn_num());
                 for(int i = 0; i < (int) response.txns_size(); i ++) {
                     txn = std::make_unique<proto::Transaction>(std::move(std::move(response.txns(i))));
                     storage_update_queue.enqueue(std::move(txn));
                 }
                 storage_update_queue.enqueue(nullptr);
             }
+            else if(msg_ptr->type_case() == proto::Message::TypeCase::kTxn) {
+                //两种方案 一种是传递整个epoch的写集
+                //一种是流水线传递 单个txn 需要cache 然后等epoch的txn收集完全后再开始update
+                //此为第二种方案
+                // unfinished
+                txn = std::make_unique<proto::Transaction>(*msg_ptr->release_txn());
+                epoch = txn->commit_epoch();
+                epoch_mod = epoch % cache_size;
+                if(txn->txn_type() == proto::EpochEndFlag) {
+                    shoule_update_txn_num[epoch_mod]->store(txn->csn());
+                }
+                //should cache
+                storage_update_queue.enqueue(std::move(txn));
+                storage_update_queue.enqueue(nullptr);
+                
+            }  
             else if(msg_ptr->type_case() == proto::Message::TypeCase::kClientReadRequest) {
                 //handle the read request
                 storage_read_queue.enqueue(std::move(msg_ptr));
@@ -2801,47 +2891,78 @@ void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from
 } 
 
 void StorageUpdaterThreadMain(uint64_t id) {
+    MOT_LOG_INFO("线程 StorageUpdaterThreadMain 开始工作 %llu", id);
     MOT::SessionContext* session_context = MOT::GetSessionManager()->
         CreateSessionContext(IS_PGXC_COORDINATOR, 0, nullptr, INVALID_CONNECTION_ID);
     MOT::TxnManager* txn_manager = session_context->GetTxnManager();
+    std::map<MOT::Row*, bool> lock_map;
+    std::vector<MOT::Table*> vec_table;
+    std::vector<MOT::Row*> vec_row;
+    std::vector<MOT::Key*> vec_key;
+    size_t key_length, key_id;
+    std::string key_str;
+    MOT::Table* table;
+    MOT::Row* row;
+    MOT::Key* key;
+    void* buf;
+    MOT::RC res;
+    
     auto txn_ptr = std::make_unique<proto::Transaction>();
     while(true) {
         storage_update_queue.wait_dequeue(txn_ptr);
         //handle txn read request
         if(txn_ptr != nullptr) {
+            MOT_LOG_INFO("Storage 收到一个事务");
             // write in single transaction
             // lock all of the txn's rows
+            txn_manager->CleanTxn();
+            vec_key.clear();
+            vec_row.clear();
+            vec_table.clear();
+            lock_map.clear();
+            key_id = 0;
             for (auto row_it = txn_ptr->row().begin(); row_it != txn_ptr->row().end(); ++row_it) {
                 MOT::Table* table = MOTAdaptor::m_engine->GetTableManager()->GetTable(row_it->table_name());
-                size_t key_length = row_it->key().length();
-                MOT::Key* key = nullptr;
+                
+                key_length = row_it->key().length();
+                buf = MOT::MemSessionAlloc(key_length);
+                if(buf == nullptr) Assert(false);
+                key = new (buf) MOT::Key(key_length);
                 key->CpKey((uint8_t*)row_it->key().c_str(), key_length);
-                MOT::Row* row = nullptr;
-                MOT::RC res = table->FindRow(key, row ,0);
-                if (res != MOT::RC_OK) {
+                key_str = key->GetKeyStr();
+                MOT_LOG_INFO("txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
+                
+                res = table->FindRow(key, row ,0);
+                if (res != MOT::RC_OK) { // an error
                     // look up fail!~
+                    row = nullptr;
                 }
                 if (row_it->op_type() == proto::OpType::Update || row_it->op_type() == proto::OpType::Delete) {
-                    row->LockRow();
+                    if(lock_map[row] == false) {
+                        row->LockRow();
+                        lock_map[row] = true;
+                    }
                 }
+                vec_key.push_back(key);
+                vec_row.push_back(row);
+                vec_table.push_back(table);
             }
             
             // process operation
+            key_id = 0;
             for (auto row_it = txn_ptr->row().begin(); row_it != txn_ptr->row().end(); ++row_it) {
-                // look for row
-                MOT::Table* table = MOTAdaptor::m_engine->GetTableManager()->GetTable(row_it->table_name());
-                size_t key_length = row_it->key().length();
-                MOT::Key* key = new MOT::Key(key_length);
-                key->CpKey((uint8_t*)row_it->key().c_str(), key_length);
-                MOT::Row* row = nullptr;
-                MOT::RC res = table->FindRow(key, row ,0);
-                if (res != MOT::RC_OK) {
+                key = vec_key[key_id];
+                row = vec_row[key_id];
+                table = vec_table[key_id];
+                key_id ++;
+                if (row == nullptr) { // insert or delete by others before this epoch
                     /* code */
                 }
                 if (row_it->op_type() == proto::OpType::Delete) {
                     row->GetPrimarySentinel()->SetDirty();
                     row->SetDeleteRow();
                     row->SetCSN(txn_ptr->csn());
+                    MOT_LOG_INFO("Storage Delete txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
                 }
                 else if (row_it->op_type() == proto::OpType::Update) {
                     row->CopyData((uint8_t*)row_it->data().c_str(),table->GetTupleSize());
@@ -2849,37 +2970,54 @@ void StorageUpdaterThreadMain(uint64_t id) {
                     // for (auto col_it = row_it->column().begin(); col_it != row_it->column().end(); ++col_it) {
                     //     row->SetValueVariable(col_it->id(), col_it->value().c_str(), col_it->value().length()); // 
                     // }
+                    MOT_LOG_INFO("Storage Update txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
+                
                 }
                 else if (row_it->op_type() == proto::OpType::Insert) {
                     row = table->CreateNewRow();
                     row->CopyData((uint8_t*)row_it->data().c_str(),table->GetTupleSize());
-                    MOT::RC res = table->InsertRow(row, txn_manager);
+                    res = table->InsertRow(row, txn_manager);
                     if ((res != MOT::RC_OK) && (res != MOT::RC_UNIQUE_VIOLATION)) {
                         MOT_REPORT_ERROR(
                             MOT_ERROR_OOM, "Insert Row ", "Failed to insert new row for table %s", table->GetLongTableName().c_str());
                     }
+                    MOT_LOG_INFO("Storage Insert %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
                 }
             }
-            txn_manager->SetCommitSequenceNumber(txn_ptr->csn());
+            // txn_manager->SetCommitSequenceNumber(txn_ptr->csn());
             txn_manager->TaasLogCommit(); // write change时会写入csn
-            
+            MOT_LOG_INFO("TaasLogCommit()");
             // release 
+            key_id = 0;
             for (auto row_it = txn_ptr->row().begin(); row_it != txn_ptr->row().end(); ++row_it) {
-                MOT::Table* table = MOTAdaptor::m_engine->GetTableManager()->GetTable(row_it->table_name());
-                MOT::Row* row = nullptr;
-                size_t key_length = row_it->key().length();
-                MOT::Key* key = new MOT::Key(key_length);
-                key->CpKey((uint8_t*)row_it->key().c_str(), key_length);
-                MOT::RC res = table->FindRow(key, row ,0);
-                if (res != MOT::RC_OK) {
+                key = vec_key[key_id];
+                row = vec_row[key_id];
+                table = vec_table[key_id];
+                key_id ++;
+                if (row == nullptr) { // an error
                     /* code */
                 }
                 if (row_it->op_type() == proto::OpType::Update || row_it->op_type() == proto::OpType::Delete) {
-                    row->ReleaseRow();
+                    if(lock_map[row] == true) {
+                        row->ReleaseRow();
+                        lock_map[row] = false;
+                    }
+                    
                 }
             }
-            auto num = updated_txn_num.fetch_add(1);
-            if(num + 1 == shoule_update_txn_num.load()) { // update finish
+
+            for(auto i : vec_key) {
+                MOT::MemSessionFree(static_cast<void*>(i));
+            }
+            vec_key.clear();
+            vec_row.clear();
+            vec_table.clear();
+            lock_map.clear();
+
+            auto epoch = txn_ptr->commit_epoch();
+            auto epoch_mod = epoch % cache_size;
+            auto num = updated_txn_num[epoch_mod]->fetch_add(1);
+            if(num + 1 == shoule_update_txn_num[epoch_mod]->load()) { // update finish
                 update_epoch.fetch_add(1);
             }
         }
@@ -2887,6 +3025,7 @@ void StorageUpdaterThreadMain(uint64_t id) {
 }
 
 void StorageReaderThreadMain(uint64_t id) {
+    MOT_LOG_INFO("线程 StorageReaderThreadMain 开始工作 %llu", id);
     auto msg_ptr = std::make_unique<proto::Message>();
     while(true) {
         storage_read_queue.wait_dequeue(msg_ptr);
@@ -2900,19 +3039,28 @@ void StorageInit() {
     //storage send
     storage_send_context = std::make_shared<zmq::context_t>(1);
     storage_send_socket = std::make_shared<zmq::socket_t>(*storage_send_context, ZMQ_PUSH);
-    storage_send_socket->connect("tcp://" + kServerIp[0] + ":5553"); 
+    storage_send_socket->connect("tcp://" + kTxnNodeIp[0] + ":5553"); 
     
     //storage listen
-    int queue_length = 0;
     storage_listen_context = std::make_shared<zmq::context_t>(1);
     storage_listen_socket = std::make_shared<zmq::socket_t>(*storage_listen_context, ZMQ_PULL);
-    storage_listen_socket->setsockopt(ZMQ_SUBSCRIBE, "", 0);
-    storage_listen_socket->setsockopt(ZMQ_RCVHWM, &queue_length, sizeof(queue_length));
     storage_listen_socket->bind("tcp://*:5554");
 
+    storage_listen_context_sub_mod = std::make_shared<zmq::context_t>(1);
+    storage_listen_socket_sub_mod = std::make_shared<zmq::socket_t>(*storage_listen_context_sub_mod, ZMQ_SUB);
+    storage_listen_socket_sub_mod->connect("tcp://" + kTxnNodeIp[0] + ":5555"); 
 
     dest_node.set_ip(kTxnNodeIp[0]);
     src_node.set_ip(kLocalIp);
+
+    
+    shoule_update_txn_num.resize(cache_size + 2);
+    updated_txn_num.resize(cache_size + 2);
+    for(int i = 0; i < (int)cache_size; i ++) {
+        shoule_update_txn_num[i] = std::make_unique<std::atomic<uint64_t>>(0);
+        updated_txn_num[i] = std::make_unique<std::atomic<uint64_t>>(0);
+    }
+    
 }
 
 uint64_t GetSleeptime(){
@@ -2936,7 +3084,10 @@ uint64_t GetSleeptime(){
 //change txn node ip 
 //dest ip
 //
+
+
 void StorageManagerThreadMain(uint64_t id) { //handle other status
+    MOT_LOG_INFO("线程 StorageManagerThreadMain 开始工作 %llu", id);
     StorageInit();
     storage_init_ok_flag.store(true);
     auto msg_ptr = std::make_unique<proto::Message>();
@@ -2952,13 +3103,24 @@ void StorageManagerThreadMain(uint64_t id) { //handle other status
     gettimeofday(&start_time, NULL);
     start_time_ll = start_time.tv_sec * 1000000 + start_time.tv_usec;
     usleep(50000);
+    auto epoch_mod = current_epoch.load() % cache_size;
     while(true) {
         usleep(GetSleeptime());
         current_epoch.fetch_add(1);
+        epoch_mod = epoch_mod + 1 % cache_size;
+        shoule_update_txn_num[epoch_mod] = std::make_unique<std::atomic<uint64_t>>(0);
+        updated_txn_num[epoch_mod] = std::make_unique<std::atomic<uint64_t>>(0);
         SendPullRequest(current_epoch.load() - 5); //delay 5 epoch
     }
 }
 
 void StorageWorker1ThreadMain(uint64_t id) {
-    while(true) usleep(1000000);
+    MOT_LOG_INFO("线程 StorageWorker1ThreadMain 开始工作 %llu", id);
+    while(storage_init_ok_flag.load() == false) usleep(200);
+    while(true) {
+        std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
+        storage_listen_socket_sub_mod->recv(&(*message_ptr));
+        storage_listen_message_queue.enqueue(std::move(message_ptr));
+        storage_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()));
+    }
 }

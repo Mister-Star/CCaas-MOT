@@ -21,6 +21,7 @@ extern PROTOBUF_INTERNAL_EXPORT_server_2eproto ::PROTOBUF_NAMESPACE_ID::internal
 extern PROTOBUF_INTERNAL_EXPORT_server_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_ReplyTransactionToClient_server_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_storage_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_StoragePullRequest_storage_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_storage_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_StoragePullResponse_storage_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_storage_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_StoragePushResponse_storage_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_transaction_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_Transaction_transaction_2eproto;
 namespace proto {
 class MessageDefaultTypeInternal {
@@ -32,6 +33,7 @@ class MessageDefaultTypeInternal {
   const ::proto::ClientReadResponse* client_read_response_;
   const ::proto::StoragePullRequest* storage_pull_request_;
   const ::proto::StoragePullResponse* storage_pull_response_;
+  const ::proto::StoragePushResponse* storage_push_response_;
   const ::proto::RaftRequest* raft_request_;
   const ::proto::RaftResponse* raft_response_;
 } _Message_default_instance_;
@@ -47,14 +49,15 @@ static void InitDefaultsscc_info_Message_message_2eproto() {
   ::proto::Message::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<8> scc_info_Message_message_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 8, 0, InitDefaultsscc_info_Message_message_2eproto}, {
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<9> scc_info_Message_message_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 9, 0, InitDefaultsscc_info_Message_message_2eproto}, {
       &scc_info_Transaction_transaction_2eproto.base,
       &scc_info_ReplyTransactionToClient_server_2eproto.base,
       &scc_info_ClientReadRequest_client_2eproto.base,
       &scc_info_ClientReadResponse_client_2eproto.base,
       &scc_info_StoragePullRequest_storage_2eproto.base,
       &scc_info_StoragePullResponse_storage_2eproto.base,
+      &scc_info_StoragePushResponse_storage_2eproto.base,
       &scc_info_RaftRequest_server_2eproto.base,
       &scc_info_RaftResponse_server_2eproto.base,}};
 
@@ -74,6 +77,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_message_2eproto::offsets[] PRO
   offsetof(::proto::MessageDefaultTypeInternal, client_read_response_),
   offsetof(::proto::MessageDefaultTypeInternal, storage_pull_request_),
   offsetof(::proto::MessageDefaultTypeInternal, storage_pull_response_),
+  offsetof(::proto::MessageDefaultTypeInternal, storage_push_response_),
   offsetof(::proto::MessageDefaultTypeInternal, raft_request_),
   offsetof(::proto::MessageDefaultTypeInternal, raft_response_),
   PROTOBUF_FIELD_OFFSET(::proto::Message, type_),
@@ -89,7 +93,7 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 const char descriptor_table_protodef_message_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\rmessage.proto\022\005proto\032\021transaction.prot"
   "o\032\014server.proto\032\014client.proto\032\rstorage.p"
-  "roto\032\nnode.proto\"\301\003\n\007Message\022!\n\003txn\030\001 \001("
+  "roto\032\nnode.proto\"\376\003\n\007Message\022!\n\003txn\030\001 \001("
   "\0132\022.proto.TransactionH\000\022E\n\032reply_txn_res"
   "ult_to_client\030\002 \001(\0132\037.proto.ReplyTransac"
   "tionToClientH\000\0227\n\023client_read_request\030\003 "
@@ -98,9 +102,11 @@ const char descriptor_table_protodef_message_2eproto[] PROTOBUF_SECTION_VARIABLE
   "ResponseH\000\0229\n\024storage_pull_request\030\005 \001(\013"
   "2\031.proto.StoragePullRequestH\000\022;\n\025storage"
   "_pull_response\030\006 \001(\0132\032.proto.StoragePull"
-  "ResponseH\000\022*\n\014raft_request\030\007 \001(\0132\022.proto"
-  ".RaftRequestH\000\022,\n\rraft_response\030\010 \001(\0132\023."
-  "proto.RaftResponseH\000B\006\n\004typeb\006proto3"
+  "ResponseH\000\022;\n\025storage_push_response\030\007 \001("
+  "\0132\032.proto.StoragePushResponseH\000\022*\n\014raft_"
+  "request\030\010 \001(\0132\022.proto.RaftRequestH\000\022,\n\rr"
+  "aft_response\030\t \001(\0132\023.proto.RaftResponseH"
+  "\000B\006\n\004typeb\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_message_2eproto_deps[5] = {
   &::descriptor_table_client_2eproto,
@@ -115,7 +121,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_mes
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_message_2eproto_once;
 static bool descriptor_table_message_2eproto_initialized = false;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_message_2eproto = {
-  &descriptor_table_message_2eproto_initialized, descriptor_table_protodef_message_2eproto, "message.proto", 556,
+  &descriptor_table_message_2eproto_initialized, descriptor_table_protodef_message_2eproto, "message.proto", 617,
   &descriptor_table_message_2eproto_once, descriptor_table_message_2eproto_sccs, descriptor_table_message_2eproto_deps, 1, 5,
   schemas, file_default_instances, TableStruct_message_2eproto::offsets,
   file_level_metadata_message_2eproto, 1, file_level_enum_descriptors_message_2eproto, file_level_service_descriptors_message_2eproto,
@@ -140,6 +146,8 @@ void Message::InitAsDefaultInstance() {
       ::proto::StoragePullRequest::internal_default_instance());
   ::proto::_Message_default_instance_.storage_pull_response_ = const_cast< ::proto::StoragePullResponse*>(
       ::proto::StoragePullResponse::internal_default_instance());
+  ::proto::_Message_default_instance_.storage_push_response_ = const_cast< ::proto::StoragePushResponse*>(
+      ::proto::StoragePushResponse::internal_default_instance());
   ::proto::_Message_default_instance_.raft_request_ = const_cast< ::proto::RaftRequest*>(
       ::proto::RaftRequest::internal_default_instance());
   ::proto::_Message_default_instance_.raft_response_ = const_cast< ::proto::RaftResponse*>(
@@ -153,6 +161,7 @@ class Message::_Internal {
   static const ::proto::ClientReadResponse& client_read_response(const Message* msg);
   static const ::proto::StoragePullRequest& storage_pull_request(const Message* msg);
   static const ::proto::StoragePullResponse& storage_pull_response(const Message* msg);
+  static const ::proto::StoragePushResponse& storage_push_response(const Message* msg);
   static const ::proto::RaftRequest& raft_request(const Message* msg);
   static const ::proto::RaftResponse& raft_response(const Message* msg);
 };
@@ -180,6 +189,10 @@ Message::_Internal::storage_pull_request(const Message* msg) {
 const ::proto::StoragePullResponse&
 Message::_Internal::storage_pull_response(const Message* msg) {
   return *msg->type_.storage_pull_response_;
+}
+const ::proto::StoragePushResponse&
+Message::_Internal::storage_push_response(const Message* msg) {
+  return *msg->type_.storage_push_response_;
 }
 const ::proto::RaftRequest&
 Message::_Internal::raft_request(const Message* msg) {
@@ -309,6 +322,26 @@ void Message::clear_storage_pull_response() {
     clear_has_type();
   }
 }
+void Message::set_allocated_storage_push_response(::proto::StoragePushResponse* storage_push_response) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaNoVirtual();
+  clear_type();
+  if (storage_push_response) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena = nullptr;
+    if (message_arena != submessage_arena) {
+      storage_push_response = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, storage_push_response, submessage_arena);
+    }
+    set_has_storage_push_response();
+    type_.storage_push_response_ = storage_push_response;
+  }
+  // @@protoc_insertion_point(field_set_allocated:proto.Message.storage_push_response)
+}
+void Message::clear_storage_push_response() {
+  if (_internal_has_storage_push_response()) {
+    delete type_.storage_push_response_;
+    clear_has_type();
+  }
+}
 void Message::set_allocated_raft_request(::proto::RaftRequest* raft_request) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaNoVirtual();
   clear_type();
@@ -384,6 +417,10 @@ Message::Message(const Message& from)
       _internal_mutable_storage_pull_response()->::proto::StoragePullResponse::MergeFrom(from._internal_storage_pull_response());
       break;
     }
+    case kStoragePushResponse: {
+      _internal_mutable_storage_push_response()->::proto::StoragePushResponse::MergeFrom(from._internal_storage_push_response());
+      break;
+    }
     case kRaftRequest: {
       _internal_mutable_raft_request()->::proto::RaftRequest::MergeFrom(from._internal_raft_request());
       break;
@@ -449,6 +486,10 @@ void Message::clear_type() {
     }
     case kStoragePullResponse: {
       delete type_.storage_pull_response_;
+      break;
+    }
+    case kStoragePushResponse: {
+      delete type_.storage_push_response_;
       break;
     }
     case kRaftRequest: {
@@ -526,16 +567,23 @@ const char* Message::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::in
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .proto.RaftRequest raft_request = 7;
+      // .proto.StoragePushResponse storage_push_response = 7;
       case 7:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 58)) {
+          ptr = ctx->ParseMessage(_internal_mutable_storage_push_response(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .proto.RaftRequest raft_request = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 66)) {
           ptr = ctx->ParseMessage(_internal_mutable_raft_request(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .proto.RaftResponse raft_response = 8;
-      case 8:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 66)) {
+      // .proto.RaftResponse raft_response = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 74)) {
           ptr = ctx->ParseMessage(_internal_mutable_raft_response(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
@@ -614,20 +662,28 @@ failure:
         6, _Internal::storage_pull_response(this), target, stream);
   }
 
-  // .proto.RaftRequest raft_request = 7;
+  // .proto.StoragePushResponse storage_push_response = 7;
+  if (_internal_has_storage_push_response()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        7, _Internal::storage_push_response(this), target, stream);
+  }
+
+  // .proto.RaftRequest raft_request = 8;
   if (_internal_has_raft_request()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        7, _Internal::raft_request(this), target, stream);
+        8, _Internal::raft_request(this), target, stream);
   }
 
-  // .proto.RaftResponse raft_response = 8;
+  // .proto.RaftResponse raft_response = 9;
   if (_internal_has_raft_response()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        8, _Internal::raft_response(this), target, stream);
+        9, _Internal::raft_response(this), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -689,14 +745,21 @@ size_t Message::ByteSizeLong() const {
           *type_.storage_pull_response_);
       break;
     }
-    // .proto.RaftRequest raft_request = 7;
+    // .proto.StoragePushResponse storage_push_response = 7;
+    case kStoragePushResponse: {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *type_.storage_push_response_);
+      break;
+    }
+    // .proto.RaftRequest raft_request = 8;
     case kRaftRequest: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
           *type_.raft_request_);
       break;
     }
-    // .proto.RaftResponse raft_response = 8;
+    // .proto.RaftResponse raft_response = 9;
     case kRaftResponse: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -761,6 +824,10 @@ void Message::MergeFrom(const Message& from) {
     }
     case kStoragePullResponse: {
       _internal_mutable_storage_pull_response()->::proto::StoragePullResponse::MergeFrom(from._internal_storage_pull_response());
+      break;
+    }
+    case kStoragePushResponse: {
+      _internal_mutable_storage_push_response()->::proto::StoragePushResponse::MergeFrom(from._internal_storage_push_response());
       break;
     }
     case kRaftRequest: {

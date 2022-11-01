@@ -208,6 +208,7 @@ private:
 public:
     bool IsReadOnly(TxnManager * txMan);
     void updateInsertSetSize(TxnManager * txMan);
+    uint32_t GetRowSetSize(TxnManager * txMan);
 };
 }  // namespace MOT
 

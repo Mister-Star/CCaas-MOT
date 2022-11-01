@@ -114,8 +114,9 @@ class Message :
     kClientReadResponse = 4,
     kStoragePullRequest = 5,
     kStoragePullResponse = 6,
-    kRaftRequest = 7,
-    kRaftResponse = 8,
+    kStoragePushResponse = 7,
+    kRaftRequest = 8,
+    kRaftResponse = 9,
     TYPE_NOT_SET = 0,
   };
 
@@ -195,8 +196,9 @@ class Message :
     kClientReadResponseFieldNumber = 4,
     kStoragePullRequestFieldNumber = 5,
     kStoragePullResponseFieldNumber = 6,
-    kRaftRequestFieldNumber = 7,
-    kRaftResponseFieldNumber = 8,
+    kStoragePushResponseFieldNumber = 7,
+    kRaftRequestFieldNumber = 8,
+    kRaftResponseFieldNumber = 9,
   };
   // .proto.Transaction txn = 1;
   bool has_txn() const;
@@ -288,7 +290,22 @@ class Message :
   ::proto::StoragePullResponse* _internal_mutable_storage_pull_response();
   public:
 
-  // .proto.RaftRequest raft_request = 7;
+  // .proto.StoragePushResponse storage_push_response = 7;
+  bool has_storage_push_response() const;
+  private:
+  bool _internal_has_storage_push_response() const;
+  public:
+  void clear_storage_push_response();
+  const ::proto::StoragePushResponse& storage_push_response() const;
+  ::proto::StoragePushResponse* release_storage_push_response();
+  ::proto::StoragePushResponse* mutable_storage_push_response();
+  void set_allocated_storage_push_response(::proto::StoragePushResponse* storage_push_response);
+  private:
+  const ::proto::StoragePushResponse& _internal_storage_push_response() const;
+  ::proto::StoragePushResponse* _internal_mutable_storage_push_response();
+  public:
+
+  // .proto.RaftRequest raft_request = 8;
   bool has_raft_request() const;
   private:
   bool _internal_has_raft_request() const;
@@ -303,7 +320,7 @@ class Message :
   ::proto::RaftRequest* _internal_mutable_raft_request();
   public:
 
-  // .proto.RaftResponse raft_response = 8;
+  // .proto.RaftResponse raft_response = 9;
   bool has_raft_response() const;
   private:
   bool _internal_has_raft_response() const;
@@ -329,6 +346,7 @@ class Message :
   void set_has_client_read_response();
   void set_has_storage_pull_request();
   void set_has_storage_pull_response();
+  void set_has_storage_push_response();
   void set_has_raft_request();
   void set_has_raft_response();
 
@@ -344,6 +362,7 @@ class Message :
     ::proto::ClientReadResponse* client_read_response_;
     ::proto::StoragePullRequest* storage_pull_request_;
     ::proto::StoragePullResponse* storage_pull_response_;
+    ::proto::StoragePushResponse* storage_push_response_;
     ::proto::RaftRequest* raft_request_;
     ::proto::RaftResponse* raft_response_;
   } type_;
@@ -627,7 +646,51 @@ inline ::proto::StoragePullResponse* Message::mutable_storage_pull_response() {
   return _internal_mutable_storage_pull_response();
 }
 
-// .proto.RaftRequest raft_request = 7;
+// .proto.StoragePushResponse storage_push_response = 7;
+inline bool Message::_internal_has_storage_push_response() const {
+  return type_case() == kStoragePushResponse;
+}
+inline bool Message::has_storage_push_response() const {
+  return _internal_has_storage_push_response();
+}
+inline void Message::set_has_storage_push_response() {
+  _oneof_case_[0] = kStoragePushResponse;
+}
+inline ::proto::StoragePushResponse* Message::release_storage_push_response() {
+  // @@protoc_insertion_point(field_release:proto.Message.storage_push_response)
+  if (_internal_has_storage_push_response()) {
+    clear_has_type();
+      ::proto::StoragePushResponse* temp = type_.storage_push_response_;
+    type_.storage_push_response_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::proto::StoragePushResponse& Message::_internal_storage_push_response() const {
+  return _internal_has_storage_push_response()
+      ? *type_.storage_push_response_
+      : *reinterpret_cast< ::proto::StoragePushResponse*>(&::proto::_StoragePushResponse_default_instance_);
+}
+inline const ::proto::StoragePushResponse& Message::storage_push_response() const {
+  // @@protoc_insertion_point(field_get:proto.Message.storage_push_response)
+  return _internal_storage_push_response();
+}
+inline ::proto::StoragePushResponse* Message::_internal_mutable_storage_push_response() {
+  if (!_internal_has_storage_push_response()) {
+    clear_type();
+    set_has_storage_push_response();
+    type_.storage_push_response_ = CreateMaybeMessage< ::proto::StoragePushResponse >(
+        GetArenaNoVirtual());
+  }
+  return type_.storage_push_response_;
+}
+inline ::proto::StoragePushResponse* Message::mutable_storage_push_response() {
+  // @@protoc_insertion_point(field_mutable:proto.Message.storage_push_response)
+  return _internal_mutable_storage_push_response();
+}
+
+// .proto.RaftRequest raft_request = 8;
 inline bool Message::_internal_has_raft_request() const {
   return type_case() == kRaftRequest;
 }
@@ -671,7 +734,7 @@ inline ::proto::RaftRequest* Message::mutable_raft_request() {
   return _internal_mutable_raft_request();
 }
 
-// .proto.RaftResponse raft_response = 8;
+// .proto.RaftResponse raft_response = 9;
 inline bool Message::_internal_has_raft_response() const {
   return type_case() == kRaftResponse;
 }

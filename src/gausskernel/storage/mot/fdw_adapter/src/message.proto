@@ -15,8 +15,9 @@ message Message {
     ClientReadResponse client_read_response = 4;
     StoragePullRequest storage_pull_request = 5;
     StoragePullResponse storage_pull_response = 6;
-    RaftRequest raft_request = 7;
-    RaftResponse raft_response = 8;
+    StoragePushResponse storage_push_response = 7;
+    RaftRequest raft_request = 8;
+    RaftResponse raft_response = 9;
   }
 }
 

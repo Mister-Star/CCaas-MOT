@@ -260,7 +260,7 @@ void TxnManager::LitePrepare()
 
     m_redoLog.Prepare();
 }
-
+//ADDBY TAAS 
 void TxnManager::CommitInternal()
 {
     if (m_csn == CSNManager::INVALID_CSN) {
@@ -268,8 +268,13 @@ void TxnManager::CommitInternal()
     }
 
     // first write to redo log, then write changes
-    m_redoLog.Commit();
+    // m_redoLog.Commit();
     m_occManager.WriteChanges(this);
+    //本地事务不做更改
+    //暂时不针对DDL进行操作 DDL:Data Definition Language
+    //只处理DML Data Manipulation Language
+    // m_occManager.RollbackInserts(this);
+    // RollbackDDLs(); 
 
     if (GetGlobalConfiguration().m_enableCheckpoint) {
         GetCheckpointManager()->EndCommit(this);
@@ -277,13 +282,20 @@ void TxnManager::CommitInternal()
 
     if (!GetGlobalConfiguration().m_enableRedoLog) {
         m_occManager.ReleaseLocks(this);
+        // m_occManager.ReleaseHeaders(this);
     }
 }
 
 //ADDBY TAAS 
 void TxnManager::TaasLogCommit() {
+
+    // if (m_csn == CSNManager::INVALID_CSN) {
+    //     MOT_LOG_INFO("Taas txn.cpp 288 m_csn == INVALID_CSN");
+    //     SetCommitSequenceNumber(GetCSNManager().GetNextCSN());
+    // }
+    MOT_LOG_INFO("Taas txn.cpp 291");
     m_occManager.updateInsertSetSize(this);
-    m_redoLog.Commit();
+    // m_redoLog.Commit();
     m_occManager.WriteChanges(this);
 
     if (GetGlobalConfiguration().m_enableCheckpoint) {
@@ -295,25 +307,42 @@ void TxnManager::TaasLogCommit() {
     }
     MOT::DbSessionStatisticsProvider::GetInstance().AddCommitTxn();
 }
-
+//ADDBY TAAS
 RC TxnManager::ValidateCommit()
 {
-    // return m_occManager.ValidateOcc(this);
     //ADDBY TAAS
+    m_occManager.updateInsertSetSize(this);
+    if(m_occManager.GetRowSetSize(this) == 0) { //建表
+        // auto res = m_occManager.ValidateOcc(this); //do nothing
+        // if(res != MOT::RC::RC_OK) {
+        //     return res;
+        // }
+        // else {
+        //     MOT_LOG_INFO("ValidateOcctxn commitinternal 318");
+        //     CommitInternal();
+            return RC_OK;
+        // }
+    }
+    
+    //check read only ? directly return?
+
     this->commit_state = RC::RC_WAIT;
     if(!MOTAdaptor::InsertTxntoLocalChangeSet(this)) {
         return RC::RC_ABORT;
     }
     std::mutex _mutex;
     std::unique_lock<std::mutex> _lock(_mutex);
-    cv.wait(_lock, [this](){return commit_state != RC::RC_WAIT;});
+    cv.wait(_lock, [this](){
+        MOT_LOG_INFO("被唤醒, 检查条件");
+        return commit_state != RC::RC_WAIT;
+        });
+    MOT_LOG_INFO("成功被唤醒");
     return commit_state;
 }
 
 void TxnManager::RecordCommit()
 {
-    //ADDBY TAAS
-    // CommitInternal();
+    CommitInternal();
     MOT::DbSessionStatisticsProvider::GetInstance().AddCommitTxn();
 }
 

@@ -1608,7 +1608,7 @@ static void MOTXactCallback(XactEvent event, void* arg)
 
         elog(DEBUG2, "XACT_EVENT_COMMIT, tid %lu", tid);
 
-        rc = MOTAdaptor::ValidateCommit();//Commit();
+        rc = MOTAdaptor::ValidateCommit();
         
         TryRecordTimestamp(3, finishCommit);//ADDBY NEU HW
 
@@ -1648,6 +1648,7 @@ static void MOTXactCallback(XactEvent event, void* arg)
         txn->SetTxnState(MOT::TxnState::TXN_END_TRANSACTION);
     } else if (event == XACT_EVENT_PREPARE) {
         elog(DEBUG2, "XACT_EVENT_PREPARE, tid %lu", tid);
+        MOT_LOG_INFO("mot_fdw txn prepare 1651");
         rc = MOTAdaptor::Prepare();
         if (rc != MOT::RC_OK) {
             elog(DEBUG2, "prepare failed");
