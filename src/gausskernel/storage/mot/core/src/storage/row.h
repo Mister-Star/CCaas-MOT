@@ -612,31 +612,6 @@ protected:
     friend Table;
 
     DECLARE_CLASS_LOGGER()
-public:
-    //ADDBY TAAS
-    inline void SetLockedRow()
-    {
-        m_rowHeader.m_csnWord |= LOCK_BIT;
-    }
-
-    inline void SetDeleteRow()
-    {
-        m_rowHeader.SetDeleted();
-    }
-
-    inline void LockRow()
-    {
-        m_rowHeader.Lock();
-    }
-
-    inline void ReleaseRow()
-    {
-        m_rowHeader.Release();
-    }
-
-    inline void SetCSN(uint64_t csn) {
-        m_rowHeader.SetCSN(csn);
-    }
 };
 }  // namespace MOT
 

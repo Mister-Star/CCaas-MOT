@@ -1082,10 +1082,6 @@ public:
      * @param dataOut The output buffer
      */
     void SerializeRedo(char* dataOut);
-
-    //ADDBY NEU
-	//ADDBY TAAS
-    Key* BuildKeyByRow(Row* row, TxnManager* txn, void* buf);
 };
 
 /** @typedef internal table identifier. */

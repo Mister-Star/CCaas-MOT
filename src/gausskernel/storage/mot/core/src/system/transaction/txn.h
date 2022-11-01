@@ -43,8 +43,6 @@
 #include "mm_session_api.h"
 #include "commit_sequence_number.h"
 
-#include <condition_variable>
-
 namespace MOT {
 class MOTContext;
 class IndexIterator;
@@ -573,13 +571,6 @@ public:
 
     /** @var holds query states from MOTAdaptor */
     std::unordered_map<uint64_t, uint64_t> m_queryState;
-    
-    //ADDBY TAAS
-    RC commit_state;
-    std::condition_variable cv;
-    void TaasLogCommit();
-    Key* GetTxnKey(MOT::Index* index, void* buf);
-    
 };
 }  // namespace MOT
 

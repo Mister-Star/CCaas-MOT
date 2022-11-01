@@ -240,12 +240,6 @@ private:
     friend CheckpointWorkerPool;
     friend RecoveryOps;
     friend Index;
-public:
-    //ADDBY TAAS
-    uint64_t GetCSN_pub() const
-    {
-        return (m_csnWord & CSN_BITS);
-    }
 };
 }  // namespace MOT
 
