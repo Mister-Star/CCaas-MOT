@@ -23,6 +23,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <algorithm>
 #include <unordered_map>
 
@@ -36,6 +37,14 @@
 #include "db_session_statistics.h"
 #include "utilities.h"
 #include "mm_api.h"
+#include "../../../../fdw_adapter/src/mot_internal.h"//ADDBY NEU
+// #include "../../../../fdw_adapter/src/mot_internal.cpp"//ADDBY NEU
+#include "postmaster/postmaster.h"
+#include <cpuid.h>
+#include <sstream>
+#include "utils/timestamp.h"
+#include <random>
+#include <stdlib.h>
 
 namespace MOT {
 DECLARE_LOGGER(TxnManager, System);
@@ -72,6 +81,17 @@ Key* TxnManager::GetTxnKey(MOT::Index* index)
     return new (buf) Key(index->GetAlignedKeyLength());
 }
 
+//ADDBY TAAS
+Key* TxnManager::GetTxnKey(MOT::Index* index, void* buf)
+{
+    int size = index->GetAlignedKeyLength() + sizeof(Key);
+    buf = MemSessionAlloc(size);
+    if (buf == nullptr) {
+        return nullptr;
+    }
+    return new (buf) Key(index->GetAlignedKeyLength());
+}
+
 RC TxnManager::InsertRow(Row* row)
 {
     GcSessionStart();
@@ -84,6 +104,8 @@ RC TxnManager::InsertRow(Row* row)
 
 Row* TxnManager::RowLookup(const AccessType type, Sentinel* const& originalSentinel, RC& rc)
 {
+    TryRecordTimestamp(1, startExec);//ADDBY NEU HW
+
     rc = RC_OK;
     // Look for the Sentinel in the cache
     Row* local_row = nullptr;
@@ -155,6 +177,10 @@ bool TxnManager::IsUpdatedInCurrStmt()
         return true;
     }
     return false;
+}
+
+uint64_t GetThreadID(){
+    return (uint64_t) std::hash<std::thread::id>{}(std::this_thread::get_id());
 }
 
 RC TxnManager::StartTransaction(uint64_t transactionId, int isolationLevel)
@@ -235,26 +261,98 @@ void TxnManager::LitePrepare()
 
 void TxnManager::CommitInternal()
 {
+    // if (m_csn == CSNManager::INVALID_CSN) {
+    //     SetCommitSequenceNumber(GetCSNManager().GetNextCSN());
+    // }
+
+    // first write to redo log, then write changes
+    // m_redoLog.Commit();
+    // m_occManager.WriteChanges(this);
+
+    // if (GetGlobalConfiguration().m_enableCheckpoint) {
+    //     GetCheckpointManager()->EndCommit(this);
+    // }
+
+    // if (!GetGlobalConfiguration().m_enableRedoLog) {
+    //     m_occManager.ReleaseLocks(this);
+    // }
+
+    //ADDBY TAAS
+    //本地事务不做更改
+    //暂时不针对DDL进行操作 DDL:Data Definition Language
+    //只处理DML Data Manipulation Language
+    //不进行更新操作，撤回insert
+    // if(m_occManager.GetRowSetSize(this) == 0) { //建表
+    //     return;
+    // }
+    // RollbackInternal(false);
+    MOT_LOG_INFO("CommitInternal txn.cpp 289");
+}
+
+//ADDBY TAAS 
+RC TxnManager::TaasLogCommit() { // only for insert
+
     if (m_csn == CSNManager::INVALID_CSN) {
         SetCommitSequenceNumber(GetCSNManager().GetNextCSN());
     }
+    MOT_LOG_INFO("Taas txn.cpp 298");
+    // if(m_occManager.ValidateOcc(this) != RC_OK) {
+    //     return RC_ABORT;
+    // }
+    // if(m_occManager.TaasOCCValidate(this) != RC_OK) {
+    //     return RC_ABORT;
+    // }
 
-    // first write to redo log, then write changes
-    m_redoLog.Commit();
-    m_occManager.WriteChanges(this);
+    uint32_t readSetSize = 0; 
+    m_occManager.updateInsertSetSize(this, readSetSize);
+    // m_redoLog.Commit();
+    m_occManager.WriteChangesForTaas(this);
 
-    if (GetGlobalConfiguration().m_enableCheckpoint) {
-        GetCheckpointManager()->EndCommit(this);
-    }
 
-    if (!GetGlobalConfiguration().m_enableRedoLog) {
-        m_occManager.ReleaseLocks(this);
-    }
+    // if (GetGlobalConfiguration().m_enableCheckpoint) {
+    //     GetCheckpointManager()->EndCommit(this);
+    // }
+
+    // if (!GetGlobalConfiguration().m_enableRedoLog) {
+    //     m_occManager.ReleaseLocks(this);
+    // }
+    MOT::DbSessionStatisticsProvider::GetInstance().AddCommitTxn();
+    return RC_OK;
 }
 
+//ADDBY TAAS
 RC TxnManager::ValidateCommit()
 {
-    return m_occManager.ValidateOcc(this);
+    //正常MOT事务执行, 先进行读集验证，随后对header上锁
+    //ValidateOcc中包含了对RowHeader进行上锁 LockHeader函数;
+    //然后在CommitInternal中进行写集更新并锁住row
+    //最后释放header和row的锁
+    //返回并清除
+    // return m_occManager.ValidateOcc(this); 
+
+
+    //ADDBY TAAS
+    uint32_t readSetSize = 0; 
+    m_occManager.updateInsertSetSize(this, readSetSize);
+
+    if(m_occManager.GetRowSetSize(this) == 0) { //建表
+        return RC_OK;
+    }
+    
+    //check read only ? directly return?
+
+    this->commit_state = RC::RC_WAIT;
+    if(!MOTAdaptor::InsertTxntoLocalChangeSet(this)) {
+        return RC::RC_ABORT;
+    }
+    std::mutex _mutex;
+    std::unique_lock<std::mutex> _lock(_mutex);
+    cv.wait(_lock, [this](){
+        MOT_LOG_INFO("被唤醒, 检查条件");
+        return commit_state != RC::RC_WAIT;
+        });
+    MOT_LOG_INFO("成功被唤醒");
+    return commit_state;
 }
 
 void TxnManager::RecordCommit()
@@ -609,6 +707,8 @@ RC TxnManager::RowDel()
 // Not Used with FDW!
 Row* TxnManager::RowLookupByKey(Table* const& table, const AccessType type, Key* const currentKey)
 {
+    TryRecordTimestamp(1, startExec);//ADDBY NEU HW
+
     RC rc = RC_OK;
     Row* originalRow = nullptr;
     Sentinel* pSentinel = nullptr;

@@ -403,6 +403,99 @@ void OccTransactionManager::ApplyWrite(TxnManager* txMan)
     }
 }
 
+//ADDBY TAAS
+void OccTransactionManager::WriteChangesForTaas(TxnManager* txMan)
+{
+    if (m_writeSetSize == 0 && m_insertSetSize == 0) {
+        return;
+    }
+    std::map<MOT::Row*, bool> lock_map;
+    lock_map.clear();
+    auto csn = txMan->GetCommitSequenceNumber();
+    TxnOrderedSet_t& orderedSet = txMan->m_accessMgr->GetOrderedRowSet();
+    for (const auto& raPair : orderedSet) {
+        const Access* access = raPair.second;
+        Row* row = access->GetRowFromHeader();
+        AccessType type = access->m_type;
+        if (type == RD) {
+            continue;
+        }
+        if(lock_map[row] == false) {
+            row->m_rowHeader.Lock();
+            lock_map[row] = true;
+        }
+    }
+
+    ApplyWrite(txMan);
+
+    for (const auto& raPair : orderedSet) {
+        const Access* access = raPair.second;
+        access->GetRowFromHeader()->m_rowHeader.WriteChangesToRow(access, txMan->GetCommitSequenceNumber());
+    }
+
+    if (m_insertSetSize > 0) {
+        for (const auto& raPair : orderedSet) {
+            Access* access = raPair.second;
+            if (access->m_type != INS) {
+                continue;
+            }
+            MOT_ASSERT(access->m_origSentinel->IsLocked() == true);
+            if (access->m_params.IsUpgradeInsert() == false) {
+                if (access->m_params.IsPrimarySentinel()) {
+                    MOT_ASSERT(access->m_origSentinel->IsDirty() == true);
+                    access->m_origSentinel->SetNextPtr(access->GetRowFromHeader());
+                    access->GetTxnRow()->GetTable()->UpdateRowCount(1);
+                } else {
+                    access->m_origSentinel->SetNextPtr(access->GetRowFromHeader()->GetPrimarySentinel());
+                }
+            } else {
+                MOT_ASSERT(access->m_params.IsUniqueIndex() == true);
+                if (access->m_params.IsPrimarySentinel()) {
+                    Row* row = access->GetRowFromHeader();
+                    access->m_localInsertRow = row;
+                    access->m_origSentinel->SetNextPtr(access->m_auxRow);
+                    txMan->GetGcSession()->GcRecordObject(row->GetTable()->GetPrimaryIndex()->GetIndexId(),
+                        row,
+                        nullptr,
+                        Row::RowDtor,
+                        ROW_SIZE_FROM_POOL(row->GetTable()));
+                } else {
+                    access->m_origSentinel->SetNextPtr(access->m_auxRow->GetPrimarySentinel());
+                }
+                if (access->m_origSentinel->IsCommited()) {
+                    access->m_origSentinel->SetUpgradeCounter();
+                }
+            }
+        }
+    }
+
+    if (m_insertSetSize > 0) {
+        for (const auto& raPair : orderedSet) {
+            const Access* access = raPair.second;
+            if (access->m_type != INS) {
+                continue;
+            }
+            access->m_origSentinel->UnSetDirty();
+        }
+    }
+
+    CleanRowsFromIndexes(txMan);
+        
+    for (const auto& raPair : orderedSet) {
+        const Access* access = raPair.second;
+        Row* row = access->GetRowFromHeader();
+        AccessType type = access->m_type;
+        if (type == RD) {
+            continue;
+        }
+        if(lock_map[row] == true) {
+            row->m_rowHeader.Release();
+        }
+        lock_map[row] = false;
+    }
+
+}
+
 void OccTransactionManager::WriteChanges(TxnManager* txMan)
 {
     if (m_writeSetSize == 0 && m_insertSetSize == 0) {
@@ -572,5 +665,103 @@ void OccTransactionManager::CleanUp()
     m_writeSetSize = 0;
     m_insertSetSize = 0;
     m_rowsSetSize = 0;
+}
+//ADDBY TAAS
+
+void OccTransactionManager::updateInsertSetSize(TxnManager * txMan, uint32_t& readSetSize){
+    int isolationLevel = txMan->GetTxnIsoLevel();
+    TxnAccess* tx = txMan->m_accessMgr.Get();
+    TxnOrderedSet_t &orderedSet = tx->GetOrderedRowSet();
+
+    for (const auto &raPair : orderedSet)
+    {
+        const Access *ac = raPair.second;
+        if (ac->m_params.IsPrimarySentinel())
+        {
+            m_rowsSetSize++;
+        }
+        switch (ac->m_type)
+        {
+            case RD_FOR_UPDATE:
+            case WR:
+                m_writeSetSize++;
+                break;
+            case DEL:
+                m_writeSetSize++;
+                m_deleteSetSize++;
+                break;
+            case INS:
+                m_insertSetSize++;
+                m_writeSetSize++;
+                break;
+            case RD: 
+                if (isolationLevel > READ_COMMITED) {
+                    readSetSize++;
+                } else {
+                    continue;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+
+RC OccTransactionManager::TaasOCCValidate(TxnManager * txMan){
+    
+    uint32_t numSentinelLock = 0;
+    m_rowsLocked = false;
+    TxnAccess* tx = txMan->m_accessMgr.Get();
+    RC rc = RC_OK;
+    const uint32_t rowCount = tx->m_rowCnt;
+
+    m_writeSetSize = 0;
+    m_rowsSetSize = 0;
+    m_deleteSetSize = 0;
+    m_insertSetSize = 0;
+    m_txnCounter++;
+
+    uint32_t readSetSize = 0;   
+    int isolationLevel = txMan->GetTxnIsoLevel();
+    TxnOrderedSet_t &orderedSet = tx->GetOrderedRowSet();
+    MOT_ASSERT(rowCount == orderedSet.size());
+
+    updateInsertSetSize(txMan, readSetSize);
+
+    rc = LockHeaders(txMan, numSentinelLock);
+    if (rc != RC_OK) {
+        goto taas_final;
+    }
+
+    // Pre-allocate stable row according to the checkpoint state.
+    if (!PreAllocStableRow(txMan)) {
+        rc = RC_MEMORY_ALLOCATION_ERROR;
+        goto taas_final;
+    }
+
+taas_final:
+    if (likely(rc == RC_OK)) {
+        MOT_ASSERT(numSentinelLock == m_writeSetSize);
+        m_rowsLocked = true;
+    } else {
+        ReleaseHeaderLocks(txMan, numSentinelLock);
+        if (likely(rc == RC_ABORT)) {
+            m_abortsCounter++;
+        }
+    }
+
+    return rc;
+
+}
+
+
+bool OccTransactionManager::IsReadOnly(TxnManager * txMan){
+    return m_writeSetSize == 0;
+}
+
+uint32_t OccTransactionManager::GetRowSetSize(TxnManager * txMan) {
+    return txMan->m_accessMgr.Get()->m_rowCnt;
+    // return m_rowsSetSize;
 }
 }  // namespace MOT

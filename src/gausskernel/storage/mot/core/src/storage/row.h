@@ -612,6 +612,29 @@ protected:
     friend Table;
 
     DECLARE_CLASS_LOGGER()
+public:
+    //ADDBY TAAS
+    inline void SetCSN_Delete(uint64_t csn) {
+        m_rowHeader.SetCSN_Delete(csn);
+    }
+
+    inline void SetCSN_Update(uint64_t csn) {
+        m_rowHeader.SetCSN_Update(csn);
+    }
+
+    inline void LockRow()
+    {
+        m_rowHeader.Lock();
+    }
+
+    inline void ReleaseRow()
+    {
+        m_rowHeader.Release();
+    }
+
+    inline void SetCSN(uint64_t csn) {
+        m_rowHeader.SetCSN(csn);
+    }
 };
 }  // namespace MOT
 

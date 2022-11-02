@@ -72,6 +72,7 @@
 #include "storage/ipc.h"
 
 #include "mot_internal.h"
+#include "postmaster/postmaster.h"
 #include "storage/mot/jit_exec.h"
 #include "mot_engine.h"
 #include "table.h"
@@ -82,6 +83,7 @@
 #include "redo_log_handler_type.h"
 #include "ext_config_loader.h"
 #include "utilities.h"
+#include "utils/timestamp.h"
 
 // allow MOT Engine logging facilities
 DECLARE_LOGGER(ExternalWrapper, FDW);
@@ -992,6 +994,8 @@ static TupleTableSlot* IterateForeignScanStopAtFirst(
  */
 static TupleTableSlot* MOTIterateForeignScan(ForeignScanState* node)
 {
+    TryRecordTimestamp(1, startExec);//ADDBY NEU HW
+
     MOT::RC rc = MOT::RC_OK;
     if (node->ss.is_scan_end) {
         return nullptr;
@@ -1532,6 +1536,13 @@ static void MOTEndForeignModify(EState* estate, ResultRelInfo* resultRelInfo)
         resultRelInfo->ri_FdwState = NULL;
     }
 }
+//ADDBY NEU
+uint64_t GetThreadID(){
+    return (uint64_t) std::hash<std::thread::id>{}(std::this_thread::get_id());
+}
+uint64_t now_to_us_fdw(){
+    return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
 
 static void MOTXactCallback(XactEvent event, void* arg)
 {
@@ -1598,13 +1609,17 @@ static void MOTXactCallback(XactEvent event, void* arg)
         elog(DEBUG2, "XACT_EVENT_COMMIT, tid %lu", tid);
 
         rc = MOTAdaptor::ValidateCommit();
+        
+        TryRecordTimestamp(3, finishCommit);//ADDBY NEU HW
+
         if (rc != MOT::RC_OK) {
+            u_sess->storage_cxt.execPhase = 0; /* �ύʧ�ܣ������� ADDBY NEU*/
             elog(DEBUG2, "commit failed");
             elog(DEBUG2, "Abort parent transaction from MOT commit, tid %lu", tid);
             MemoryEreportError();
             abortParentTransactionParamsNoDetail(ERRCODE_T_R_SERIALIZATION_FAILURE,
                 "Commit: could not serialize access due to concurrent update(%d)",
-                txnState);
+                txnState);//ADDBY NEU
         }
         txn->SetTxnState(MOT::TxnState::TXN_COMMIT);
     } else if (event == XACT_EVENT_RECORD_COMMIT) {
@@ -2376,4 +2391,88 @@ uint16_t MOTDateToStr(uintptr_t src, char* destBuf, size_t len)
     pfree_ext(tmp);
     securec_check_ss(erc, "\0", "\0");
     return erc;
+}
+
+
+
+
+
+
+
+
+
+//ADDBY NEU
+void FDWEpochLogicalTimerManagerThreadMain(uint64_t id){
+}
+void FDWEpochPhysicalTimerManagerThreadMain(uint64_t id){
+}
+void FDWEpochMessageCacheManagerThreadMain(uint64_t id){
+}
+void FDWEpochMessageManagerThreadMain(uint64_t id){
+}
+void FDWEpochNotifyThreadMain(uint64_t id){
+}
+void FDWEpochPackThreadMain(uint64_t id){
+}
+void FDWEpochRaftSendThreadMain(uint64_t id) {
+}
+void FDWEpochSendThreadMain(uint64_t id){
+}
+void FDWEpochMessageSendThreadMain(uint64_t id){
+}
+void FDWEpochListenThreadMain(uint64_t id){
+}
+void FDWEpochMessageListenThreadMain(uint64_t id){
+}
+void FDWEpochRaftListenThreadMain(uint64_t id) {
+}
+void FDWEpochUnseriThreadMain(uint64_t id){
+}
+void FDWEpochUnpackThreadMain(uint64_t id){
+}
+void FDWEpochMergeThreadMain(uint64_t id){
+}
+void FDWEpochCommitThreadMain(uint64_t id){
+}
+void FDWEpochRecordCommitThreadMain(uint64_t id){
+}
+void FDWMultiRaftThreadMain(uint64_t id) {
+}
+
+
+
+//ADDBY TAAS
+void FDWClientSenderThreadMain(uint64_t id) {
+    ClientSendThreadMain(id);
+}
+void FDWClientListenerThreadMain(uint64_t id) {
+    ClientListenThreadMain(id);
+}
+void FDWClientManagerThreadMain(uint64_t id) {
+    ClientManagerThreadMain(id);
+}
+void FDWClientWorker1ThreadMain(uint64_t id) {
+    ClientWorker1ThreadMain(id);
+}
+
+void FDWStorageSenderThreadMain(uint64_t id) {
+    StorageSendThreadMain(id);
+}
+void FDWStorageListenerThreadMain(uint64_t id) {
+    StorageListenThreadMain(id);
+}
+void FDWStorageManagerThreadMain(uint64_t id) {
+    StorageManagerThreadMain(id);
+}
+void FDWStorageMessageManagerThreadMain(uint64_t id) {
+    StorageMessageManagerThreadMain(id);
+}
+void FDWStorageReaderThreadMain(uint64_t id) {
+    StorageReaderThreadMain(id);
+}
+void FDWStorageUpdaterThreadMain(uint64_t id) { 
+    StorageUpdaterThreadMain(id);
+}
+void FDWStorageWorker1ThreadMain(uint64_t id) {
+    StorageWorker1ThreadMain(id);
 }

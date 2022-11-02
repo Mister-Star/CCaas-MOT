@@ -79,4 +79,19 @@ std::string HexStr(const uint8_t* data, uint16_t len)
     }
     return outStr;
 }
+
+//ADDBY NEU
+//ADDBY TAAS
+uint8_t* StrToUint(std::string data){
+    uint8_t m_keyBuf[data.size()/2];
+    uint32_t pos = 0;
+    for (size_t i = 0; i < data.size(); i++){
+            m_keyBuf[pos++] = (((uint8_t)(data[i] - '0') & 0x0F) << 4) | (((uint8_t)(data[++i] - '0') & 0x0F));
+    }
+    return (uint8_t*)m_keyBuf;
+}
+uint64_t now_to_us()
+{
+    return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
 }  // namespace MOT

@@ -41,9 +41,41 @@
 #include "bitmapset.h"
 #include "storage/mot/jit_exec.h"
 #include "mot_match_index.h"
+#include <atomic>
+#include <unordered_set>
+#include <unordered_map>
+#include <functional>
+#include <mutex>
+#include <condition_variable>
+#include "pthread.h"
+#include "table.h"
+#include "row.h"
+#include "neu_concurrency_tools/blockingconcurrentqueue.h"
+#include "neu_concurrency_tools/blocking_mpmc_queue.h"
+#include "neu_concurrency_tools/readerwriterqueue.h"
+#include <vector>
+#include <typeinfo>
+#include <random>
+#include <stdlib.h>
+// #include <semaphore.h>
 
 using std::map;
 using std::string;
+
+extern void ClientSendThreadMain(uint64_t id);
+extern void ClientListenThreadMain(uint64_t id);
+extern void ClientManagerThreadMain(uint64_t id);
+extern void ClientWorker1ThreadMain(uint64_t id);
+
+extern void StorageSendThreadMain(uint64_t id);
+extern void StorageListenThreadMain(uint64_t id);
+extern void StorageMessageManagerThreadMain(uint64_t id);
+extern void StorageUpdaterThreadMain(uint64_t id);
+extern void StorageReaderThreadMain(uint64_t id);
+extern void StorageManagerThreadMain(uint64_t id);
+extern void StorageWorker1ThreadMain(uint64_t id);
+
+
 
 #define MIN_DYNAMIC_PROCESS_MEMORY 2 * 1024 * 1024
 
@@ -160,6 +192,9 @@ struct MOTFdwState_St {
 
 class MOTAdaptor {
 public:
+//ADDBY TAAS
+    static bool InsertTxntoLocalChangeSet(MOT::TxnManager* txMan);
+
     static void Init();
     static void Destroy();
     static void NotifyConfigChange();

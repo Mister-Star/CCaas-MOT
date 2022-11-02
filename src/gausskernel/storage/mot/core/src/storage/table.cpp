@@ -33,7 +33,7 @@
 #include "txn_insert_action.h"
 #include "redo_log_writer.h"
 #include "recovery_manager.h"
-
+#include "utils/timestamp.h"
 namespace MOT {
 IMPLEMENT_CLASS_LOGGER(Table, Storage);
 
@@ -451,6 +451,7 @@ RC Table::InsertRowNonTransactional(Row* row, uint64_t tid, Key* k, bool skipSec
 
 RC Table::InsertRow(Row* row, TxnManager* txn)
 {
+    TryRecordTimestamp(1, startExec);//ADDBY NEU HW
     MOT::Key* key = nullptr;
     uint64_t surrogateprimaryKey = 0;
     MOT::Index* ix = GetPrimaryIndex();
@@ -598,6 +599,8 @@ Row* Table::RemoveKeyFromIndex(Row* row, Sentinel* sentinel, uint64_t tid, GcMan
 
 Row* Table::CreateNewRow()
 {
+    TryRecordTimestamp(1, startExec);//ADDBY NEU HW
+    
     Row* row = m_rowPool->Alloc<Row>(this);
     if (row == nullptr) {
         MOT_REPORT_ERROR(MOT_ERROR_OOM, "Create Row", "Failed to create new row in table %s", m_longTableName.c_str());
@@ -1270,4 +1273,22 @@ void Table::SerializeRedo(char* dataOut)
         dataOut = SerializeItem(dataOut, GetField(i));
     }
 }
+
+
+//ADDBY NEU
+Key* Table::BuildKeyByRow(Row* row, TxnManager* txn, void* buf)
+{
+    MOT::Key* key = nullptr;
+    MOT::Index* ix = GetPrimaryIndex();
+    key = txn->GetTxnKey(ix, buf);
+    // key =txn->GetTxnKey(ix);
+    if(key == nullptr || key == 0x0){
+        return nullptr;
+    }
+    ix->BuildKey(this, row, key);
+    // std::string key_str = key.GetKeyStr();
+    // MOT_LOG_INFO(("build_key:" + key_str).c_str());
+    return key;
+}
+
 }  // namespace MOT

@@ -203,6 +203,14 @@ private:
 
     /** @var Validate-no-wait configuration. */
     bool m_validationNoWait;
+
+    ///ADDBY TAAS
+public:
+    bool IsReadOnly(TxnManager * txMan);
+    RC TaasOCCValidate(TxnManager * txMan);
+    void updateInsertSetSize(TxnManager* txMan, uint32_t& readSetSize);
+    uint32_t GetRowSetSize(TxnManager * txMan);
+    void WriteChangesForTaas(TxnManager* txMan);
 };
 }  // namespace MOT
 

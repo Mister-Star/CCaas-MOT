@@ -104,6 +104,8 @@ enum RC : uint32_t {
     RC_NA,
     /** @var The maximum value for return codes. */
     RC_MAX_VALUE,  // This is always the highest value of the RC list
+    //ADDBY TAAS
+    RC_WAIT,
 };
 
 /**
