@@ -2609,29 +2609,28 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
     }
     // MOT_LOG_INFO("MOTAdaprot 事务涉及 %d %llu 行数据 事务本地csn为 %llu", num, txn->row().size(), txn->client_txn_id());
     //test
-    {
-        auto msg_temp = std::make_unique<proto::Message>();
-        auto txn_reply = msg_temp->mutable_reply_txn_result_to_client();
-        txn_reply->set_txn_state(proto::TxnState::Commit);
-        txn_reply->set_client_txn_id(txn->client_txn_id());
-        auto str_ptr = Gzip(std::move(msg_temp));
-        auto zmq_msg = std::make_unique<zmq::message_t>(static_cast<void*>(const_cast<char*>(str_ptr->data())),
-                    str_ptr->size(), string_free, static_cast<void*>(str_ptr));
-
-        client_listen_message_queue.enqueue(std::move(zmq_msg));
-        client_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()));
-
-        // storage_update_queue.enqueue(std::make_unique<proto::Transaction>((msg->txn())));
-        storage_update_queue.enqueue(std::make_unique<proto::Transaction>(*(msg->release_txn())));
-        storage_update_queue.enqueue(std::move(nullptr));
-    }
-
     // {
-    //     auto* serialized_txn_str_ptr = Gzip(std::move(msg));
-    //     client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, serialized_txn_str_ptr)));
-    //     client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, nullptr)));
-    
+    //     auto msg_temp = std::make_unique<proto::Message>();
+    //     auto txn_reply = msg_temp->mutable_reply_txn_result_to_client();
+    //     txn_reply->set_txn_state(proto::TxnState::Commit);
+    //     txn_reply->set_client_txn_id(txn->client_txn_id());
+    //     auto str_ptr = Gzip(std::move(msg_temp));
+    //     auto zmq_msg = std::make_unique<zmq::message_t>(static_cast<void*>(const_cast<char*>(str_ptr->data())),
+    //                 str_ptr->size(), string_free, static_cast<void*>(str_ptr));
+
+    //     client_listen_message_queue.enqueue(std::move(zmq_msg));
+    //     client_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()));
+
+    //     // storage_update_queue.enqueue(std::make_unique<proto::Transaction>((msg->txn())));
+    //     storage_update_queue.enqueue(std::make_unique<proto::Transaction>(*(msg->release_txn())));
+    //     storage_update_queue.enqueue(std::move(nullptr));
     // }
+
+    {
+        auto* serialized_txn_str_ptr = Gzip(std::move(msg));
+        client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, serialized_txn_str_ptr)));
+        client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, nullptr)));
+    }
     return true;
 }
 
@@ -2690,7 +2689,7 @@ void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn nod
                         txnMan->commit_state = MOT::RC::RC_ABORT;
                     }
                     txnMan->cv.notify_all();
-                    MOT_LOG_INFO("唤醒 csn %llu, txn txnid %llu, txn_state %llu", csn, txnMan->GetCommitSequenceNumber(), txnMan->commit_state);
+                    // MOT_LOG_INFO("唤醒 csn %llu, txn txnid %llu, txn_state %llu", csn, txnMan->GetCommitSequenceNumber(), txnMan->commit_state);
                     txn_map.remove(csn);
                 }
                 else {
@@ -2912,7 +2911,7 @@ void StorageUpdaterThreadMain(uint64_t id) {
         // continue;
         //handle txn read request
         if(txn_ptr != nullptr) {
-            MOT_LOG_INFO("Storage 收到一个事务");
+            // MOT_LOG_INFO("Storage 收到一个事务");
             // write in single transaction
             // lock all of the txn's rows
             txn_manager->CleanTxn();
@@ -2931,7 +2930,7 @@ void StorageUpdaterThreadMain(uint64_t id) {
                 key = new (buf) MOT::Key(key_length);
                 key->CpKey((uint8_t*)row_it->key().c_str(), key_length);
                 key_str = key->GetKeyStr();
-                MOT_LOG_INFO("txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
+                // MOT_LOG_INFO("txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
                 
                 res = table->FindRow(key, row ,0);
                 if (res != MOT::RC_OK) { // an error
@@ -2942,7 +2941,7 @@ void StorageUpdaterThreadMain(uint64_t id) {
                     if(lock_map[row] == false) {
                         row->LockRow();
                         lock_map[row] = true;
-                        MOT_LOG_INFO("txn LockRow %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
+                        // MOT_LOG_INFO("txn LockRow %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
                     }
                 }
                 vec_key.push_back(key);
@@ -2963,7 +2962,7 @@ void StorageUpdaterThreadMain(uint64_t id) {
                 if (row_it->op_type() == proto::OpType::Delete) {
                     row->GetPrimarySentinel()->SetDirty();
                     row->SetCSN_Delete(txn_ptr->csn());
-                    MOT_LOG_INFO("Storage Delete txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
+                    // MOT_LOG_INFO("Storage Delete txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
                 }
                 else if (row_it->op_type() == proto::OpType::Update) {
                     row->CopyData((uint8_t*)row_it->data().c_str(),table->GetTupleSize());
@@ -2971,7 +2970,7 @@ void StorageUpdaterThreadMain(uint64_t id) {
                     //     row->SetValueVariable(col_it->id(), col_it->value().c_str(), col_it->value().length()); // 
                     // }
                     row->SetCSN_Update(txn_ptr->csn());
-                    MOT_LOG_INFO("Storage Update txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
+                    // MOT_LOG_INFO("Storage Update txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
                 }
                 else if (row_it->op_type() == proto::OpType::Insert) {
                     row = table->CreateNewRow();
@@ -2981,19 +2980,19 @@ void StorageUpdaterThreadMain(uint64_t id) {
                         MOT_REPORT_ERROR(
                             MOT_ERROR_OOM, "Insert Row ", "Failed to insert new row for table %s", table->GetLongTableName().c_str());
                     }
-                    if(res != MOT::RC_OK) {
-                        MOT_REPORT_ERROR(
-                            MOT_ERROR_OOM, "Taas Insert Row ", "Failed to insert new row for table %s", table->GetLongTableName().c_str());
-                    }
-                    MOT_LOG_INFO("Storage Insert %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
+                    // if(res != MOT::RC_OK) {
+                    //     MOT_REPORT_ERROR(
+                    //         MOT_ERROR_OOM, "Taas Insert Row ", "Failed to insert new row for table %s", table->GetLongTableName().c_str());
+                    // }
+                    // MOT_LOG_INFO("Storage Insert %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
                 }
             }
             // txn_manager->SetCommitSequenceNumber(txn_ptr->csn());
             if(txn_manager->TaasLogCommit() != MOT::RC::RC_OK) {
-                MOT_LOG_INFO("TaasLogCommit Failed");
+                // MOT_LOG_INFO("TaasLogCommit Failed");
                 commit_res = false;  
             } // write change时会写入csn
-            MOT_LOG_INFO("TaasLogCommit()");
+            // MOT_LOG_INFO("TaasLogCommit()");
             // release 
             key_id = 0;
             for (auto row_it = txn_ptr->row().begin(); row_it != txn_ptr->row().end(); ++row_it) {
@@ -3008,19 +3007,19 @@ void StorageUpdaterThreadMain(uint64_t id) {
                     if(lock_map[row] == true) {
                         row->ReleaseRow();
                         lock_map[row] = false;
-                        MOT_LOG_INFO("txn ReleaseRow %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
+                        // MOT_LOG_INFO("txn ReleaseRow %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
                     }
                     else {
-                        MOT_LOG_INFO("txn ReleaseRow else");
+                        // MOT_LOG_INFO("txn ReleaseRow else");
                     }
                     
                 }
             }
-            MOT_LOG_INFO("Taas ReleaseRow()");
+            // MOT_LOG_INFO("Taas ReleaseRow()");
             for(auto i : vec_key) {
                 MOT::MemSessionFree(static_cast<void*>(i));
             }
-            MOT_LOG_INFO("Taas MemSessionFree()");
+            // MOT_LOG_INFO("Taas MemSessionFree()");
             vec_key.clear();
             vec_row.clear();
             vec_table.clear();
@@ -3063,6 +3062,7 @@ void StorageInit() {
     storage_listen_socket = std::make_shared<zmq::socket_t>(*storage_listen_context, ZMQ_PULL);
     storage_listen_socket->bind("tcp://*:5554");
 
+    //storage subscribe
     storage_listen_context_sub_mod = std::make_shared<zmq::context_t>(1);
     storage_listen_socket_sub_mod = std::make_shared<zmq::socket_t>(*storage_listen_context_sub_mod, ZMQ_SUB);
     storage_listen_socket_sub_mod->connect("tcp://" + kTxnNodeIp[0] + ":5555"); 
@@ -3127,12 +3127,12 @@ void StorageManagerThreadMain(uint64_t id) { //handle other status
         epoch_mod = epoch_mod + 1 % cache_size;
         shoule_update_txn_num[epoch_mod] = std::make_unique<std::atomic<uint64_t>>(0);
         updated_txn_num[epoch_mod] = std::make_unique<std::atomic<uint64_t>>(0);
-        SendPullRequest(current_epoch.load() - 5); //delay 5 epoch
+        // SendPullRequest(current_epoch.load() - 5); //delay 5 epoch
     }
 }
 
 void StorageWorker1ThreadMain(uint64_t id) {
-    MOT_LOG_INFO("线程 StorageWorker1ThreadMain 开始工作 %llu", id);
+    MOT_LOG_INFO("线程 StorageWorker1ThreadMain Listener Subscribe Mode 开始工作 %llu", id);
     while(storage_init_ok_flag.load() == false) usleep(200);
     while(true) {
         std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();

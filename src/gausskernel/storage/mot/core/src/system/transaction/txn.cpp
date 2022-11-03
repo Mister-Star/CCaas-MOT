@@ -286,7 +286,7 @@ void TxnManager::CommitInternal()
     //     return;
     // }
     // RollbackInternal(false);
-    MOT_LOG_INFO("CommitInternal txn.cpp 289");
+    // MOT_LOG_INFO("CommitInternal txn.cpp 289");
 }
 
 //ADDBY TAAS 
@@ -295,7 +295,7 @@ RC TxnManager::TaasLogCommit() { // only for insert
     if (m_csn == CSNManager::INVALID_CSN) {
         SetCommitSequenceNumber(GetCSNManager().GetNextCSN());
     }
-    MOT_LOG_INFO("Taas txn.cpp 298");
+    // MOT_LOG_INFO("Taas txn.cpp 298");
     // if(m_occManager.ValidateOcc(this) != RC_OK) {
     //     return RC_ABORT;
     // }
@@ -348,10 +348,10 @@ RC TxnManager::ValidateCommit()
     std::mutex _mutex;
     std::unique_lock<std::mutex> _lock(_mutex);
     cv.wait(_lock, [this](){
-        MOT_LOG_INFO("被唤醒, 检查条件");
+        // MOT_LOG_INFO("被唤醒, 检查条件");
         return commit_state != RC::RC_WAIT;
         });
-    MOT_LOG_INFO("成功被唤醒");
+    // MOT_LOG_INFO("成功被唤醒");
     return commit_state;
 }
 
