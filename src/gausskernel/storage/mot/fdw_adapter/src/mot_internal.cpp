@@ -2787,7 +2787,7 @@ BlockingConcurrentQueue<std::unique_ptr<proto::Message>> storage_read_queue;
 // std::shared_ptr<zmq::socket_t> storage_send_socket, storage_listen_socket, storage_listen_socket_sub_mod;
 
 std::atomic<bool> storage_init_ok_flag(false);
-std::atomic<uint64_t> update_epoch(0), current_epoch(5);
+std::atomic<uint64_t> update_epoch(0), current_epoch(5), total_commit_txn_num(0);
 std::vector<std::unique_ptr<std::atomic<uint64_t>>> shoule_update_txn_num, updated_txn_num;
 
 uint64_t start_time_ll, start_physical_epoch = 1, cache_size = 10000;
@@ -2826,7 +2826,7 @@ bool HandlePackTxnx(proto::Message* msg) {
             storage_update_queue.enqueue(std::move(txn));
         }
         storage_update_queue.enqueue(nullptr);
-        MOT_LOG_INFO("收到一个Epoch txn pack %llu txxn num %llu", epoch, response->txns_size());
+        // MOT_LOG_INFO("收到一个Epoch txn pack %llu txxn num %llu", epoch, response->txns_size());
     }
     else {
         auto* response = &(msg->storage_push_response());
@@ -2838,7 +2838,7 @@ bool HandlePackTxnx(proto::Message* msg) {
             storage_update_queue.enqueue(std::move(txn));
         }
         storage_update_queue.enqueue(nullptr);
-        MOT_LOG_INFO("收到一个Epoch txn pack %llu txxn num %llu", epoch, response->txns_size());
+        // MOT_LOG_INFO("收到一个Epoch txn pack %llu txxn num %llu", epoch, response->txns_size());
     }
 }
 
@@ -2907,6 +2907,7 @@ void StorageUpdaterThreadMain(uint64_t id) {
     void* buf;
     MOT::RC res;
     bool commit_res = false;
+    uint64_t commit_txn_num = 0;
     
     auto txn_ptr = std::make_unique<proto::Transaction>();
     while(true) {
@@ -3032,12 +3033,18 @@ void StorageUpdaterThreadMain(uint64_t id) {
 
             }
             else {
+                commit_txn_num ++;
+                if(commit_txn_num % 5 == 0) {
+                    auto num = total_commit_txn_num.fetch_add(commit_txn_num);
+                    commit_txn_num = 0;
+                    MOT_LOG_INFO("共提交 txn num %llu", num);
+                }
                 auto epoch = txn_ptr->commit_epoch();
                 auto epoch_mod = epoch % cache_size;
                 auto num = updated_txn_num[epoch_mod]->fetch_add(1);
                 if(num + 1 == shoule_update_txn_num[epoch_mod]->load()) { // update finish
                     update_epoch.fetch_add(1);
-                    MOT_LOG_INFO("完成一个Epoch txn pack 写入 epoch %llu txn num %llu", epoch, num);
+                    // MOT_LOG_INFO("完成一个Epoch txn pack 写入 epoch %llu txn num %llu", epoch, num);
                     shoule_update_txn_num[epoch_mod]->store(0);
                     updated_txn_num[epoch_mod]->store(0);
                 }

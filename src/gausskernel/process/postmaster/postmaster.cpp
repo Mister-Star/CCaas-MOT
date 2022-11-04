@@ -270,7 +270,7 @@ void GetServerInfo();
 //ADDBY TAAS
 std::vector<std::string> kTxnNodeIp, kStorageNodeIp;
 std::string kLocalIp;
-uint64_t kStorageUpdaterThreadNum = 10, kStorageReaderThreadNum = 10;
+uint64_t kStorageUpdaterThreadNum = 32, kStorageReaderThreadNum = 32;
 
 void GenerateClientThreads();
 void GenerateStorageThreads();
