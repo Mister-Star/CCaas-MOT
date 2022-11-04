@@ -23,6 +23,7 @@
  */
 #include <google/protobuf/io/gzip_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/message.h>
 
 #include <ostream>
 #include <istream>
@@ -2538,9 +2539,10 @@ BlockingConcurrentQueue<std::unique_ptr<zmq::message_t>> client_listen_message_q
 BlockingConcurrentQueue<std::unique_ptr<send_thread_params>> client_send_message_queue;
 BlockingConcurrentQueue<std::unique_ptr<proto::Message>> client_other_message_queue;
 
-std::unique_ptr<std::mutex> client_send_mutex, client_listen_mutex;
-std::shared_ptr<zmq::context_t> client_send_context, client_listen_context;
-std::shared_ptr<zmq::socket_t> client_send_socket, client_listen_socket;
+// std::unique_ptr<std::mutex> client_send_mutex, client_listen_mutex;
+// std::shared_ptr<zmq::context_t> client_send_context, client_listen_context;
+// std::shared_ptr<zmq::socket_t> client_send_socket, client_listen_socket;
+
 std::atomic<bool> client_init_ok_flag(false);
 ConcurrentHashMap<uint64_t, MOT::TxnManager*> txn_map;
 std::atomic<uint64_t> local_csn(5);
@@ -2639,6 +2641,9 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
 
 void ClientSendThreadMain(uint64_t id) {
     MOT_LOG_INFO("线程 ClientSendThreadMain 开始工作 %llu", id);
+    auto client_send_context = std::make_shared<zmq::context_t>(1);
+    auto client_send_socket = std::make_shared<zmq::socket_t>(*client_send_context, ZMQ_PUSH);
+    client_send_socket->connect("tcp://" + kTxnNodeIp[0] + ":5551"); 
     std::unique_ptr<send_thread_params> params;
     std::unique_ptr<zmq::message_t> msg;
     while(client_init_ok_flag.load() == false) usleep(200);
@@ -2655,6 +2660,9 @@ void ClientSendThreadMain(uint64_t id) {
 
 void ClientListenThreadMain(uint64_t id) {
     MOT_LOG_INFO("线程 ClientListenThreadMain 开始工作 %llu", id);
+    auto client_listen_context = std::make_shared<zmq::context_t>(1);
+    auto client_listen_socket = std::make_shared<zmq::socket_t>(*client_listen_context, ZMQ_PULL);
+    client_listen_socket->bind("tcp://*:5552");
     while(client_init_ok_flag.load() == false) usleep(200);
     while(true) {
         std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
@@ -2714,14 +2722,14 @@ void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn nod
 
 void ClientInit() {
     //Client send
-    client_send_context = std::make_shared<zmq::context_t>(1);
-    client_send_socket = std::make_shared<zmq::socket_t>(*client_send_context, ZMQ_PUSH);
-    client_send_socket->connect("tcp://" + kTxnNodeIp[0] + ":5551"); 
+    // client_send_context = std::make_shared<zmq::context_t>(1);
+    // client_send_socket = std::make_shared<zmq::socket_t>(*client_send_context, ZMQ_PUSH);
+    // client_send_socket->connect("tcp://" + kTxnNodeIp[0] + ":5551"); 
     
     //Client listen
-    client_listen_context = std::make_shared<zmq::context_t>(1);
-    client_listen_socket = std::make_shared<zmq::socket_t>(*client_listen_context, ZMQ_PULL);
-    client_listen_socket->bind("tcp://*:5552");
+    // client_listen_context = std::make_shared<zmq::context_t>(1);
+    // client_listen_socket = std::make_shared<zmq::socket_t>(*client_listen_context, ZMQ_PULL);
+    // client_listen_socket->bind("tcp://*:5552");
 }
 
 void ClientManagerThreadMain(uint64_t id) { //handle other status
@@ -2774,9 +2782,9 @@ BlockingConcurrentQueue<std::unique_ptr<proto::Message>> storage_other_message_q
 BlockingConcurrentQueue<std::unique_ptr<proto::Message>> storage_read_queue;
 
 
-std::unique_ptr<std::mutex> storage_send_mutex, storage_listen_mutex;
-std::shared_ptr<zmq::context_t> storage_send_context, storage_listen_context, storage_listen_context_sub_mod;
-std::shared_ptr<zmq::socket_t> storage_send_socket, storage_listen_socket, storage_listen_socket_sub_mod;
+// std::unique_ptr<std::mutex> storage_send_mutex, storage_listen_mutex;
+// std::shared_ptr<zmq::context_t> storage_send_context, storage_listen_context, storage_listen_context_sub_mod;
+// std::shared_ptr<zmq::socket_t> storage_send_socket, storage_listen_socket, storage_listen_socket_sub_mod;
 
 std::atomic<bool> storage_init_ok_flag(false);
 std::atomic<uint64_t> update_epoch(0), current_epoch(5);
@@ -2798,6 +2806,42 @@ void SendPullRequest(uint64_t epoch_id) {
     storage_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, nullptr)));
 }
 
+bool HandlePackTxnx(proto::Message* msg) {
+    if(msg->type_case() == proto::Message::TypeCase::kStoragePullResponse) {
+        auto* response = &(msg->storage_pull_response());
+        if(response->result() == proto::Result::Fail) {
+            //Send pull request to another server or wait a few seconds
+            // SendPullRequest(response->epoch_id());
+            return true;
+        } 
+        // if(response->epoch_id() != update_epoch.load()) {
+        //     //cache the log
+        //     continue;
+        // }
+        auto epoch = response->epoch_id();
+        auto epoch_mod = epoch % cache_size;
+        shoule_update_txn_num[epoch_mod]->store(response->txn_num());
+        for(int i = 0; i < (int) response->txns_size(); i ++) {
+            auto txn = std::make_unique<proto::Transaction>(std::move(std::move(response->txns(i))));
+            storage_update_queue.enqueue(std::move(txn));
+        }
+        storage_update_queue.enqueue(nullptr);
+        MOT_LOG_INFO("收到一个Epoch txn pack %llu txxn num %llu", epoch, response->txns_size());
+    }
+    else {
+        auto* response = &(msg->storage_push_response());
+        auto epoch = response->epoch_id();
+        auto epoch_mod = epoch % cache_size;
+        shoule_update_txn_num[epoch_mod]->store(response->txn_num());
+        for(int i = 0; i < (int) response->txns_size(); i ++) {
+            auto txn = std::make_unique<proto::Transaction>(std::move(std::move(response->txns(i))));
+            storage_update_queue.enqueue(std::move(txn));
+        }
+        storage_update_queue.enqueue(nullptr);
+        MOT_LOG_INFO("收到一个Epoch txn pack %llu txxn num %llu", epoch, response->txns_size());
+    }
+}
+
 void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from Txn node/ Storage Node
     MOT_LOG_INFO("线程 StorageMessageManagerThreadMain 开始工作 %llu", id);
     std::unique_ptr<zmq::message_t> message_ptr;
@@ -2816,25 +2860,7 @@ void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from
 
             if(msg_ptr->type_case() == proto::Message::TypeCase::kStoragePullResponse || msg_ptr->type_case() == proto::Message::TypeCase::kStoragePushResponse) {
                 //handle the log and update it in mot
-                auto& response = msg_ptr->storage_pull_response();
-                if(response.result() == proto::Result::Fail) {
-                    //Send pull request to another server or wait a few seconds
-                    // SendPullRequest(response.epoch_id());
-                    continue;
-                } 
-                if(response.epoch_id() != update_epoch.load()) {
-                    //cache the log
-                    continue;
-                }
-                epoch = response.epoch_id();
-                epoch_mod = epoch % cache_size;
-                shoule_update_txn_num[epoch_mod]->store(response.txn_num());
-                for(int i = 0; i < (int) response.txns_size(); i ++) {
-                    txn = std::make_unique<proto::Transaction>(std::move(std::move(response.txns(i))));
-                    storage_update_queue.enqueue(std::move(txn));
-                }
-                storage_update_queue.enqueue(nullptr);
-                MOT_LOG_INFO("收到一个Epoch txn pack %llu txxn num %llu", epoch, response.txns_size());
+                HandlePackTxnx(msg_ptr.get());
             }
             else if(msg_ptr->type_case() == proto::Message::TypeCase::kTxn) {
                 //两种方案 一种是传递整个epoch的写集
@@ -3032,21 +3058,20 @@ void StorageReaderThreadMain(uint64_t id) {
 }
 
 void StorageInit() {
-    MOT_LOG_INFO("txn node ip : %s", kTxnNodeIp[0].c_str());
-    //storage send
-    storage_send_context = std::make_shared<zmq::context_t>(1);
-    storage_send_socket = std::make_shared<zmq::socket_t>(*storage_send_context, ZMQ_PUSH);
-    storage_send_socket->connect("tcp://" + kTxnNodeIp[0] + ":5553"); 
+    // //storage send
+    // storage_send_context = std::make_shared<zmq::context_t>(1);
+    // storage_send_socket = std::make_shared<zmq::socket_t>(*storage_send_context, ZMQ_PUSH);
+    // storage_send_socket->connect("tcp://" + kTxnNodeIp[0] + ":5553"); 
     
-    //storage listen
-    storage_listen_context = std::make_shared<zmq::context_t>(1);
-    storage_listen_socket = std::make_shared<zmq::socket_t>(*storage_listen_context, ZMQ_PULL);
-    storage_listen_socket->bind("tcp://*:5554");
+    // //storage listen
+    // storage_listen_context = std::make_shared<zmq::context_t>(2);
+    // storage_listen_socket = std::make_shared<zmq::socket_t>(*storage_listen_context, ZMQ_PULL);
+    // storage_listen_socket->bind("tcp://*:5554");
 
     //storage subscribe
-    storage_listen_context_sub_mod = std::make_shared<zmq::context_t>(1);
-    storage_listen_socket_sub_mod = std::make_shared<zmq::socket_t>(*storage_listen_context_sub_mod, ZMQ_SUB);
-    storage_listen_socket_sub_mod->connect("tcp://" + kTxnNodeIp[0] + ":5556"); 
+    // storage_listen_context_sub_mod = std::make_shared<zmq::context_t>(3);
+    // storage_listen_socket_sub_mod = std::make_shared<zmq::socket_t>(*storage_listen_context_sub_mod, ZMQ_SUB);
+    // storage_listen_socket_sub_mod->connect("tcp://" + kTxnNodeIp[0] + ":5556"); 
 
     dest_node.set_ip(kTxnNodeIp[0]);
     src_node.set_ip(kLocalIp);
@@ -3115,12 +3140,31 @@ void StorageManagerThreadMain(uint64_t id) { //handle other status
 void StorageWorker1ThreadMain(uint64_t id) { // Listen SUB
     MOT_LOG_INFO("线程 StorageWorker1ThreadMain Listener Subscribe Mode 开始工作 %llu", id);
     while(storage_init_ok_flag.load() == false) usleep(200);
-    while(true) {
+    // MOT_LOG_INFO("txn node ip : %s", kTxnNodeIp[0].c_str());
+    // auto storage_listen_context_sub_mod = std::make_shared<zmq::context_t>(1);
+    // auto storage_listen_socket_sub_mod = std::make_shared<zmq::socket_t>(*storage_listen_context_sub_mod, ZMQ_SUB);
+    // storage_listen_socket_sub_mod->connect("tcp://" + kTxnNodeIp[0] + ":5556"); 
+    // while(true) {
+    //     std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
+    //     storage_listen_socket_sub_mod->recv(&(*message_ptr));
+    //     storage_listen_message_queue.enqueue(std::move(message_ptr));
+    //     storage_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()));
+    //     MOT_LOG_INFO("线程 StorageWorker1ThreadMain 收到一个epoch pack");
+    // }
+    zmq::context_t listen_context(1);
+    zmq::socket_t socket_listen(listen_context, ZMQ_SUB);
+    int queue_length = 0;
+    socket_listen.setsockopt(ZMQ_SUBSCRIBE, "", 0);
+    socket_listen.setsockopt(ZMQ_RCVHWM, &queue_length, sizeof(queue_length));
+    socket_listen.connect("tcp://" +kTxnNodeIp[0] + ":5556");
+    MOT_LOG_INFO("线程开始工作 ListenThread %s", ("tcp://" +kTxnNodeIp[0] + ":5556").c_str());
+
+    for(;;) {
         std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
-        storage_listen_socket_sub_mod->recv(&(*message_ptr));
-        storage_listen_message_queue.enqueue(std::move(message_ptr));
-        storage_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()));
-        MOT_LOG_INFO("线程 StorageWorker1ThreadMain 收到一个epoch pack");
+        socket_listen.recv(&(*message_ptr));
+        if(!storage_listen_message_queue.enqueue(std::move(message_ptr))) assert(false);
+        if(!storage_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()))) assert(false);
+        MOT_LOG_INFO("Storage Linsten PUB-SUB 接收一条消息");
     }
 }
 
@@ -3130,6 +3174,9 @@ void StorageWorker1ThreadMain(uint64_t id) { // Listen SUB
 
 void StorageSendThreadMain(uint64_t id) { // PULL PUSH
     MOT_LOG_INFO("线程 StorageSendThreadMain 开始工作 %llu", id);
+    auto storage_send_context = std::make_shared<zmq::context_t>(1);
+    auto storage_send_socket = std::make_shared<zmq::socket_t>(*storage_send_context, ZMQ_PUSH);
+    storage_send_socket->connect("tcp://" + kTxnNodeIp[0] + ":5553"); 
     std::unique_ptr<send_thread_params> params;
     std::unique_ptr<zmq::message_t> msg;
     while(storage_init_ok_flag.load() == false) usleep(200);
@@ -3145,6 +3192,9 @@ void StorageSendThreadMain(uint64_t id) { // PULL PUSH
 
 void StorageListenThreadMain(uint64_t id) {// PULL PUSH
     MOT_LOG_INFO("线程 StorageListenThreadMain 开始工作 %llu", id);
+    auto storage_listen_context = std::make_shared<zmq::context_t>(2);
+    auto storage_listen_socket = std::make_shared<zmq::socket_t>(*storage_listen_context, ZMQ_PULL);
+    storage_listen_socket->bind("tcp://*:5554");
     while(storage_init_ok_flag.load() == false) usleep(200);
     while(true) {
         std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
