@@ -2454,7 +2454,7 @@ protected:
     inline std::mutex& GetMutexRef(const key k) const {return _mutex[(_hash(k) % _N)]; }
 
 private:
-    const static uint64_t _N = 997;//1217 12281 122777 prime
+    const static uint64_t _N = 101;//521 997 1217 12281 122777 prime
     std::hash<key> _hash;
     std::unordered_map<key, value> _map[_N];
     std::mutex _mutex[_N];
@@ -2609,7 +2609,7 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
         txnMan_ptr->commit_state = MOT::RC::RC_ABORT;
         txnMan_ptr->cv.notify_all();
     }
-    MOT_LOG_INFO("MOTAdaprot 事务涉及 %d %llu 行数据 事务本地csn为 %llu", num, txn->row().size(), txn->client_txn_id());
+    MOT_LOG_INFO("MOTAdaprot 事务 csn %llu 涉及 %d %llu 行数据 事务本地csn为 %llu %llu", csn, num, txn->row().size(), txn->client_txn_id(), now_to_us());
     //test
     // {
     //     auto msg_temp = std::make_unique<proto::Message>();
@@ -2640,10 +2640,11 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
 
 
 void ClientSendThreadMain(uint64_t id) {
+    SetCPU();
     MOT_LOG_INFO("线程 ClientSendThreadMain 开始工作 %llu", id);
     auto client_send_context = std::make_shared<zmq::context_t>(1);
     auto client_send_socket = std::make_shared<zmq::socket_t>(*client_send_context, ZMQ_PUSH);
-    client_send_socket->connect("tcp://" + kTxnNodeIp[0] + ":5551"); 
+    client_send_socket->connect("tcp://" + kTxnNodeIp[txn_ip_index] + ":5551"); 
     std::unique_ptr<send_thread_params> params;
     std::unique_ptr<zmq::message_t> msg;
     while(client_init_ok_flag.load() == false) usleep(200);
@@ -2653,59 +2654,93 @@ void ClientSendThreadMain(uint64_t id) {
             msg = std::make_unique<zmq::message_t>(static_cast<void*>(const_cast<char*>(params->merge_request_ptr->data())),
                     params->merge_request_ptr->size(), string_free, static_cast<void*>(params->merge_request_ptr));
             client_send_socket->send(*(msg));
-            MOT_LOG_INFO("ClientSendThreadMain 发送一个事务");
+            // MOT_LOG_INFO("ClientSendThreadMain 发送一个事务");
         }
     }
 }
 
+BlockingConcurrentQueue<std::unique_ptr<proto::Message>> client_receive_message_queue;
+
 void ClientListenThreadMain(uint64_t id) {
+    SetCPU();
     MOT_LOG_INFO("线程 ClientListenThreadMain 开始工作 %llu", id);
-    auto client_listen_context = std::make_shared<zmq::context_t>(1);
-    auto client_listen_socket = std::make_shared<zmq::socket_t>(*client_listen_context, ZMQ_PULL);
-    client_listen_socket->bind("tcp://*:5552");
-    while(client_init_ok_flag.load() == false) usleep(200);
-    while(true) {
-        std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
-        client_listen_socket->recv(&(*message_ptr));
-        client_listen_message_queue.enqueue(std::move(message_ptr));
-        client_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()));
-        MOT_LOG_INFO("ClientListenThreadMain 收到一个事务reply");
+    // auto client_listen_context = std::make_shared<zmq::context_t>(1);
+    // auto client_listen_socket = std::make_shared<zmq::socket_t>(*client_listen_context, ZMQ_PULL);
+    // client_listen_socket->bind("tcp://*:5552");
+    // while(client_init_ok_flag.load() == false) usleep(200);
+    // while(true) {
+    //     std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
+    //     client_listen_socket->recv(&(*message_ptr));
+    //     client_listen_message_queue.enqueue(std::move(message_ptr));
+    //     client_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()));
+    //     // MOT_LOG_INFO("ClientListenThreadMain 收到一个事务reply");
+    // }
+
+    //===================================SUB==================
+    zmq::context_t listen_context(1);
+    zmq::socket_t socket_listen(listen_context, ZMQ_SUB);
+    int queue_length = 0;
+    socket_listen.setsockopt(ZMQ_SUBSCRIBE, "", 0);
+    socket_listen.setsockopt(ZMQ_RCVHWM, &queue_length, sizeof(queue_length));
+    socket_listen.connect("tcp://" +kTxnNodeIp[txn_ip_index] + ":5552");
+    MOT_LOG_INFO("线程开始工作 ClientListenThreadMain Client SUB %s", ("tcp://" + kTxnNodeIp[txn_ip_index] + ":5552").c_str());
+    std::unique_ptr<proto::Message> msg_ptr;
+    std::unique_ptr<zmq::message_t> message_ptr;
+    std::unique_ptr<std::string> message_string_ptr;
+    for(;;) {
+        message_ptr = std::make_unique<zmq::message_t>();
+        socket_listen.recv(&(*message_ptr));
+        msg_ptr = std::make_unique<proto::Message>();
+        message_string_ptr = std::make_unique<std::string>(static_cast<const char*>(message_ptr->data()), message_ptr->size());
+        google::protobuf::io::ArrayInputStream inputStream(message_string_ptr->data(), message_string_ptr->size());
+        google::protobuf::io::GzipInputStream gzipStream(&inputStream);
+        msg_ptr->ParseFromZeroCopyStream(&gzipStream);
+        MOT_LOG_INFO("唤醒1 csn %llu, txn_state %llu %llu", 
+            msg_ptr->reply_txn_result_to_client().client_txn_id(), msg_ptr->reply_txn_result_to_client().txn_state(), now_to_us());
+        client_receive_message_queue.enqueue(std::move(msg_ptr));
+        client_receive_message_queue.enqueue(std::move(nullptr));
+        if(!client_listen_message_queue.enqueue(std::move(message_ptr))) assert(false);
+        if(!client_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()))) assert(false);
+        // MOT_LOG_INFO("Storage Linsten PUB-SUB 接收一条消息");
     }
 }
 
 void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn node/ Storage Node
+    SetCPU();
     MOT_LOG_INFO("线程 ClientWorker1ThreadMain 开始工作 %llu", id);
     std::unique_ptr<zmq::message_t> message_ptr;
     std::unique_ptr<std::string> message_string_ptr;
+    std::unique_ptr<proto::Message> msg_ptr;
     MOT::TxnManager* txnMan;
+    uint64_t csn = 0;
+    
     while(true) {
         client_listen_message_queue.wait_dequeue(message_ptr);
         if(message_ptr != nullptr && message_ptr->size() > 0) {
-            auto msg_ptr = std::make_unique<proto::Message>();
-            auto message_string_ptr = std::make_unique<std::string>(static_cast<const char*>(message_ptr->data()), message_ptr->size());
+            msg_ptr = std::make_unique<proto::Message>();
+            message_string_ptr = std::make_unique<std::string>(static_cast<const char*>(message_ptr->data()), message_ptr->size());
             google::protobuf::io::ArrayInputStream inputStream(message_string_ptr->data(), message_string_ptr->size());
             google::protobuf::io::GzipInputStream gzipStream(&inputStream);
             msg_ptr->ParseFromZeroCopyStream(&gzipStream);
             if(msg_ptr->type_case() == proto::Message::TypeCase::kReplyTxnResultToClient) {
                 //wake up local thread and return the commit result
                 auto& txn = msg_ptr->reply_txn_result_to_client();
-                auto csn = txn.client_txn_id();
+                csn = txn.client_txn_id();
+                MOT_LOG_INFO("唤醒2 csn %llu %llu", csn, now_to_us());
                 if(txn_map.get_value(csn, txnMan)) {
                     if(txn.txn_state() == proto::TxnState::Commit) {
-                        usleep(10000);
                         txnMan->commit_state = MOT::RC::RC_OK;
                     }
                     else{
                         txnMan->commit_state = MOT::RC::RC_ABORT;
                     }
                     txnMan->cv.notify_all();
-                    MOT_LOG_INFO("唤醒 csn %llu, txn txnid %llu, txn_state %llu", csn, txnMan->GetCommitSequenceNumber(), txnMan->commit_state);
+                    MOT_LOG_INFO("唤醒3 csn %llu, txn txnid %llu, txn_state %llu %llu", csn, txnMan->GetCommitSequenceNumber(), txnMan->commit_state, now_to_us());
                     txn_map.remove(csn);
                 }
                 else {
-                    MOT_LOG_INFO("未找到 csn %llu", csn);
+                    // MOT_LOG_INFO("未找到 csn %llu", csn);
                 }
-
             }
             else if(msg_ptr->type_case() == proto::Message::TypeCase::kClientReadResponse) {
                 //wake up local thread and return the read result
@@ -2715,6 +2750,26 @@ void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn nod
                 client_other_message_queue.enqueue(std::move(std::make_unique<proto::Message>()));
             }
         }
+        // client_receive_message_queue.wait_dequeue(msg_ptr);
+        // if(msg_ptr != nullptr) {
+        //     if(msg_ptr->type_case() == proto::Message::TypeCase::kReplyTxnResultToClient) {
+        //         //wake up local thread and return the commit result
+        //         auto& txn = msg_ptr->reply_txn_result_to_client();
+        //         auto csn = txn.client_txn_id();
+        //         MOT_LOG_INFO("唤醒2 csn %llu %llu", csn, now_to_us());
+        //         if(txn_map.get_value(csn, txnMan)) {
+        //             if(txn.txn_state() == proto::TxnState::Commit) {
+        //                 txnMan->commit_state = MOT::RC::RC_OK;
+        //             }
+        //             else{
+        //                 txnMan->commit_state = MOT::RC::RC_ABORT;
+        //             }
+        //             txnMan->cv.notify_all();
+        //             MOT_LOG_INFO("唤醒3 csn %llu, txn txnid %llu, txn_state %llu %llu", csn, txnMan->GetCommitSequenceNumber(), txnMan->commit_state, now_to_us());
+        //             txn_map.remove(csn);
+        //         }
+        //     }
+        // }
     }
 } 
 
@@ -2724,7 +2779,7 @@ void ClientInit() {
     //Client send
     // client_send_context = std::make_shared<zmq::context_t>(1);
     // client_send_socket = std::make_shared<zmq::socket_t>(*client_send_context, ZMQ_PUSH);
-    // client_send_socket->connect("tcp://" + kTxnNodeIp[0] + ":5551"); 
+    // client_send_socket->connect("tcp://" + kTxnNodeIp[txn_ip_index] + ":5551"); 
     
     //Client listen
     // client_listen_context = std::make_shared<zmq::context_t>(1);
@@ -2843,6 +2898,7 @@ bool HandlePackTxnx(proto::Message* msg) {
 }
 
 void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from Txn node/ Storage Node
+    SetCPU();
     MOT_LOG_INFO("线程 StorageMessageManagerThreadMain 开始工作 %llu", id);
     std::unique_ptr<zmq::message_t> message_ptr;
     std::unique_ptr<proto::Message> msg_ptr; 
@@ -2915,7 +2971,7 @@ void StorageUpdaterThreadMain(uint64_t id) {
         // continue;
         //handle txn read request
         if(txn_ptr != nullptr) {
-            MOT_LOG_INFO("Storage 收到一个事务");
+            // MOT_LOG_INFO("Storage 收到一个事务");
             // write in single transaction
             // lock all of the txn's rows
             txn_manager->CleanTxn();
@@ -3068,7 +3124,7 @@ void StorageInit() {
     // //storage send
     // storage_send_context = std::make_shared<zmq::context_t>(1);
     // storage_send_socket = std::make_shared<zmq::socket_t>(*storage_send_context, ZMQ_PUSH);
-    // storage_send_socket->connect("tcp://" + kTxnNodeIp[0] + ":5553"); 
+    // storage_send_socket->connect("tcp://" + kTxnNodeIp[txn_ip_index] + ":5553"); 
     
     // //storage listen
     // storage_listen_context = std::make_shared<zmq::context_t>(2);
@@ -3078,9 +3134,9 @@ void StorageInit() {
     //storage subscribe
     // storage_listen_context_sub_mod = std::make_shared<zmq::context_t>(3);
     // storage_listen_socket_sub_mod = std::make_shared<zmq::socket_t>(*storage_listen_context_sub_mod, ZMQ_SUB);
-    // storage_listen_socket_sub_mod->connect("tcp://" + kTxnNodeIp[0] + ":5556"); 
+    // storage_listen_socket_sub_mod->connect("tcp://" + kTxnNodeIp[txn_ip_index] + ":5556"); 
 
-    dest_node.set_ip(kTxnNodeIp[0]);
+    dest_node.set_ip(kTxnNodeIp[txn_ip_index]);
     src_node.set_ip(kLocalIp);
 
     
@@ -3145,12 +3201,13 @@ void StorageManagerThreadMain(uint64_t id) { //handle other status
 }
 
 void StorageWorker1ThreadMain(uint64_t id) { // Listen SUB
+    SetCPU();
     MOT_LOG_INFO("线程 StorageWorker1ThreadMain Listener Subscribe Mode 开始工作 %llu", id);
     while(storage_init_ok_flag.load() == false) usleep(200);
-    // MOT_LOG_INFO("txn node ip : %s", kTxnNodeIp[0].c_str());
+    // MOT_LOG_INFO("txn node ip : %s", kTxnNodeIp[txn_ip_index].c_str());
     // auto storage_listen_context_sub_mod = std::make_shared<zmq::context_t>(1);
     // auto storage_listen_socket_sub_mod = std::make_shared<zmq::socket_t>(*storage_listen_context_sub_mod, ZMQ_SUB);
-    // storage_listen_socket_sub_mod->connect("tcp://" + kTxnNodeIp[0] + ":5556"); 
+    // storage_listen_socket_sub_mod->connect("tcp://" + kTxnNodeIp[txn_ip_index] + ":5556"); 
     // while(true) {
     //     std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
     //     storage_listen_socket_sub_mod->recv(&(*message_ptr));
@@ -3163,15 +3220,15 @@ void StorageWorker1ThreadMain(uint64_t id) { // Listen SUB
     int queue_length = 0;
     socket_listen.setsockopt(ZMQ_SUBSCRIBE, "", 0);
     socket_listen.setsockopt(ZMQ_RCVHWM, &queue_length, sizeof(queue_length));
-    socket_listen.connect("tcp://" +kTxnNodeIp[0] + ":5556");
-    MOT_LOG_INFO("线程开始工作 ListenThread %s", ("tcp://" +kTxnNodeIp[0] + ":5556").c_str());
+    socket_listen.connect("tcp://" +kTxnNodeIp[txn_ip_index] + ":5556");
+    MOT_LOG_INFO("线程开始工作 ListenThread %s", ("tcp://" + kTxnNodeIp[txn_ip_index] + ":5556").c_str());
 
     for(;;) {
         std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
         socket_listen.recv(&(*message_ptr));
         if(!storage_listen_message_queue.enqueue(std::move(message_ptr))) assert(false);
         if(!storage_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()))) assert(false);
-        MOT_LOG_INFO("Storage Linsten PUB-SUB 接收一条消息");
+        // MOT_LOG_INFO("Storage Linsten PUB-SUB 接收一条消息");
     }
 }
 
@@ -3183,7 +3240,7 @@ void StorageSendThreadMain(uint64_t id) { // PULL PUSH
     MOT_LOG_INFO("线程 StorageSendThreadMain 开始工作 %llu", id);
     auto storage_send_context = std::make_shared<zmq::context_t>(1);
     auto storage_send_socket = std::make_shared<zmq::socket_t>(*storage_send_context, ZMQ_PUSH);
-    storage_send_socket->connect("tcp://" + kTxnNodeIp[0] + ":5553"); 
+    storage_send_socket->connect("tcp://" + kTxnNodeIp[txn_ip_index] + ":5553"); 
     std::unique_ptr<send_thread_params> params;
     std::unique_ptr<zmq::message_t> msg;
     while(storage_init_ok_flag.load() == false) usleep(200);

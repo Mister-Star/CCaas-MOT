@@ -20,7 +20,7 @@
 #include<vector>
 extern std::vector<std::string> kServerIp, kCacheServerIp;
 extern std::vector<uint64_t> port;
-extern volatile uint64_t kServerNum;
+extern volatile uint64_t kTxnNodeNum;
 extern uint64_t kPortNum, kPackageNum, kNotifyNum, kBatchNum, kNotifyThreadNum, kPackThreadNum, kSendThreadNum, 
     kListenThreadNum, kUnseriThreadNum, kUnpackThreadNum, kMergeThreadNum, kCommitThreadNum, kRecordCommitThreadNum, kSendMessageNum, kReceiveMessageNum, 
     kSleepTime, local_ip_index, kCacheMaxLength, kDelayEpochNum, kServerTimeOut_us, kRaftTimeOut_us, kStartCheckStateNum, kLimiteTxnNum, kDelayTime,
@@ -35,7 +35,7 @@ extern volatile bool is_stable_epoch_send, is_epoch_advanced_by_message, is_read
 //ADDBY TAAS
 extern std::vector<std::string> kTxnNodeIp, kStorageNodeIp;
 extern std::string kLocalIp;
-extern uint64_t kStorageUpdaterThreadNum, kStorageReaderThreadNum;
+extern uint64_t kStorageUpdaterThreadNum, kStorageReaderThreadNum, kEpochSize_us, txn_ip_index;
 
 extern THR_LOCAL bool comm_client_bind;
 

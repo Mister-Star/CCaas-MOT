@@ -340,7 +340,7 @@ RC TxnManager::ValidateCommit()
     }
     
     //check read only ? directly return?
-
+    auto time1 = now_to_us();
     this->commit_state = RC::RC_WAIT;
     if(!MOTAdaptor::InsertTxntoLocalChangeSet(this)) {
         return RC::RC_ABORT;
@@ -350,8 +350,9 @@ RC TxnManager::ValidateCommit()
     cv.wait(_lock, [this](){
         // MOT_LOG_INFO("被唤醒, 检查条件");
         return commit_state != RC::RC_WAIT;
-        });
-    // MOT_LOG_INFO("成功被唤醒");
+    });
+    auto time2 = now_to_us();
+    MOT_LOG_INFO("csn %llu 成功被唤醒 time %llu %llu", GetCommitSequenceNumber(), time2, time2 - time1);
     return commit_state;
 }
 

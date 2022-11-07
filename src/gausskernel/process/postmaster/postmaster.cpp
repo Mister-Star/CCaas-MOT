@@ -249,7 +249,7 @@
 #include<vector>
 std::vector<std::string> kServerIp, kCacheServerIp;
 std::vector<uint64_t> port; // ServerNum * PackageNum
-volatile uint64_t kServerNum = 1;
+volatile uint64_t kTxnNodeNum = 1;
 uint64_t kPortNum = 1, kPackageNum = 1, kNotifyNum = 1, kBatchNum = 1, kNotifyThreadNum = 1, kPackThreadNum = 4, kSendThreadNum = 1, 
     kListenThreadNum = 1, kUnseriThreadNum = 1, kUnpackThreadNum = 1, kMergeThreadNum = 1, kCommitThreadNum = 1, kRecordCommitThreadNum = 1, 
     kSendMessageNum = 1, kReceiveMessageNum = 1, 
@@ -270,7 +270,7 @@ void GetServerInfo();
 //ADDBY TAAS
 std::vector<std::string> kTxnNodeIp, kStorageNodeIp;
 std::string kLocalIp;
-uint64_t kStorageUpdaterThreadNum = 32, kStorageReaderThreadNum = 32;
+uint64_t kStorageUpdaterThreadNum = 32, kStorageReaderThreadNum = 32, kEpochSize_us = 10000, txn_ip_index = 0 ;
 
 void GenerateClientThreads();
 void GenerateStorageThreads();
@@ -11475,7 +11475,7 @@ void GenerateEpochThreads(){
         ereport(LOG, (errmsg("EpochMessageManagerThread创建完成第 %d 个创建完成 pid %lu",i, g_instance.pid_cxt.EpochMessageManagerPIDS[i])));
     }
 
-    if(kServerNum != 1) {
+    if(kTxnNodeNum != 1) {
         for (int i = 0 ; i < (int)kPackThreadNum; i++){
             g_instance.pid_cxt.EpochPackPIDS[i] = initialize_util_thread(EPOCH_PACK); 
             epoch_pack_thread_ids.push_back(g_instance.pid_cxt.EpochPackPIDS[i]);
@@ -11582,7 +11582,7 @@ void CkeckEpochThreadsI(){
             }
         }
 
-    if(kServerNum != 1) {
+    if(kTxnNodeNum != 1) {
 
         if (g_instance.pid_cxt.EpochPackPIDS != NULL) 
             for (int i = 0 ; i < (int)kPackThreadNum; i++){
@@ -11708,7 +11708,7 @@ void GetServerInfo(){
     }
 
     tinyxml2::XMLElement* server_num = root->FirstChildElement("server_num");
-    kServerNum= std::stoull(server_num->GetText());
+    kTxnNodeNum= std::stoull(server_num->GetText());
 
     tinyxml2::XMLElement* local_ip_index_xml = root->FirstChildElement("local_ip_index");
     local_ip_index=std::stoull(local_ip_index_xml->GetText()) ;
@@ -11816,7 +11816,7 @@ void GetServerInfo(){
     kStartCheckStateNum = std::stoull(start_check_state_num->GetText());
 
 
-    if(kServerNum > 1){
+    if(kTxnNodeNum > 1){
         // kSendThreadNum = kListenThreadNum = kPackageNum + 1;
         kSendThreadNum = kListenThreadNum = 3;
     }
@@ -11852,7 +11852,7 @@ void GetServerInfo(){
 
 
     ereport(LOG, (errmsg("local ip_index %llu ip %s",local_ip_index, kServerIp[local_ip_index].c_str())));
-    for(int i = 0; i < (int)kServerNum; i++ ){
+    for(int i = 0; i < (int)kTxnNodeNum; i++ ){
         ereport(LOG, (errmsg("ip: %s",kServerIp[i].c_str())));
         if(i == (int)local_ip_index) continue;
         for(int j = 0; j < (int)kPackThreadNum; j++){
@@ -11863,7 +11863,7 @@ void GetServerInfo(){
             //改为PUB SUB模式为 send_port：20000 + local_ip_index*100          linsten_ports: 20000 + i * 100
         }
     }
-    ereport(LOG, (errmsg("server_num %d", (int)kServerNum)));
+    ereport(LOG, (errmsg("server_num %d", (int)kTxnNodeNum)));
     ereport(LOG, (errmsg("local_ip_index %d", (int)local_ip_index)));
     ereport(LOG, (errmsg("sleep_time %d", (int)kSleepTime)));
     ereport(LOG, (errmsg("master_ip %s", kMasterIp.c_str())));
@@ -12005,7 +12005,7 @@ void GenerateStorageThreads(){
 
 void TaasGetServerInfo(){
     tinyxml2::XMLDocument doc;  
-    doc.LoadFile("/tmp/TaasServerInfo.xml");
+    doc.LoadFile("/tmp/zwx/TaasServerInfo.xml");
     tinyxml2::XMLElement *root=doc.RootElement();  
     tinyxml2::XMLElement *index_element=root->FirstChildElement("txn_node_ip");  
 	int symbol_local_or_remote=0;
@@ -12041,24 +12041,16 @@ void TaasGetServerInfo(){
         symbol_local_or_remote++;
     }
 
-    tinyxml2::XMLElement* server_num = root->FirstChildElement("server_num");
-    kServerNum= std::stoull(server_num->GetText());
+    tinyxml2::XMLElement* server_num = root->FirstChildElement("txn_node_num");
+    kTxnNodeNum= std::stoull(server_num->GetText());
 
-    tinyxml2::XMLElement* local_ip_index_xml = root->FirstChildElement("local_ip_index");
-    local_ip_index=std::stoull(local_ip_index_xml->GetText());
+    tinyxml2::XMLElement* txn_ip_index_xml = root->FirstChildElement("txn_ip_index");
+    txn_ip_index=std::stoull(txn_ip_index_xml->GetText());
 
-    tinyxml2::XMLElement* sleep_time = root->FirstChildElement("sleep_time");
-    kSleepTime= std::stoull(sleep_time->GetText());
+    tinyxml2::XMLElement* sleep_time = root->FirstChildElement("epoch_size_us");
+    kEpochSize_us= std::stoull(sleep_time->GetText());
 
-    tinyxml2::XMLElement* master_ip = root->FirstChildElement("master_ip");
-    std::string temp1(master_ip->GetText());
-    kMasterIp = temp1;
-
-    tinyxml2::XMLElement* private_ip = root->FirstChildElement("private_ip");
-    std::string temp2(private_ip->GetText());
-    kPrivateIp = temp2;
-
-    tinyxml2::XMLElement* local_ip = root->FirstChildElement("local_ip");
+    tinyxml2::XMLElement* local_ip = root->FirstChildElement("client_local_ip");
     std::string temp3(local_ip->GetText());
     kLocalIp = temp3;
 
@@ -12069,11 +12061,9 @@ void TaasGetServerInfo(){
     for(int i = 0; i < (int)kStorageNodeIp.size(); i++ ){
         ereport(LOG, (errmsg("ip: %s",kStorageNodeIp[i].c_str())));
     }
-    ereport(LOG, (errmsg("server_num %d", (int)kServerNum)));
-    ereport(LOG, (errmsg("local_ip_index %d", (int)local_ip_index)));
-    ereport(LOG, (errmsg("sleep_time %d", (int)kSleepTime)));
-    ereport(LOG, (errmsg("master_ip %s", kMasterIp.c_str())));
-    ereport(LOG, (errmsg("master_ip %s", kPrivateIp.c_str())));
+    ereport(LOG, (errmsg("server_num %d", (int)kTxnNodeNum)));
+    ereport(LOG, (errmsg("txn_ip_index %d", (int)txn_ip_index)));
+    ereport(LOG, (errmsg("sleep_time %d", (int)kEpochSize_us)));
     ereport(LOG, (errmsg("master_ip %s", kLocalIp.c_str())));
     ereport(LOG, (errmsg("========================================================")));
 }
