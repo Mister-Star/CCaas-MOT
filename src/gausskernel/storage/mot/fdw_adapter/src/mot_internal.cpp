@@ -2543,7 +2543,7 @@ BlockingConcurrentQueue<std::unique_ptr<proto::Message>> client_other_message_qu
 // std::shared_ptr<zmq::context_t> client_send_context, client_listen_context;
 // std::shared_ptr<zmq::socket_t> client_send_socket, client_listen_socket;
 
-std::atomic<bool> client_init_ok_flag(false);
+std::atomic<bool> client_init_ok_flag(false), client_start_flag(false);
 ConcurrentHashMap<uint64_t, MOT::TxnManager*> txn_map;
 std::atomic<uint64_t> local_csn(5);
 
@@ -2695,8 +2695,8 @@ void ClientListenThreadMain(uint64_t id) {
         google::protobuf::io::ArrayInputStream inputStream(message_string_ptr->data(), message_string_ptr->size());
         google::protobuf::io::GzipInputStream gzipStream(&inputStream);
         msg_ptr->ParseFromZeroCopyStream(&gzipStream);
-        MOT_LOG_INFO("唤醒1 csn %llu, txn_state %llu %llu", 
-            msg_ptr->reply_txn_result_to_client().client_txn_id(), msg_ptr->reply_txn_result_to_client().txn_state(), now_to_us());
+        // MOT_LOG_INFO("唤醒1 csn %llu, txn_state %llu %llu", 
+        //     msg_ptr->reply_txn_result_to_client().client_txn_id(), msg_ptr->reply_txn_result_to_client().txn_state(), now_to_us());
         client_receive_message_queue.enqueue(std::move(msg_ptr));
         client_receive_message_queue.enqueue(std::move(nullptr));
         if(!client_listen_message_queue.enqueue(std::move(message_ptr))) assert(false);
@@ -2726,7 +2726,7 @@ void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn nod
                 //wake up local thread and return the commit result
                 auto& txn = msg_ptr->reply_txn_result_to_client();
                 csn = txn.client_txn_id();
-                MOT_LOG_INFO("唤醒2 csn %llu %llu", csn, now_to_us());
+                // MOT_LOG_INFO("唤醒2 csn %llu %llu", csn, now_to_us());
                 if(txn_map.get_value(csn, txnMan)) {
                     if(txn.txn_state() == proto::TxnState::Commit) {
                         txnMan->commit_state = MOT::RC::RC_OK;
@@ -2735,7 +2735,7 @@ void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn nod
                         txnMan->commit_state = MOT::RC::RC_ABORT;
                     }
                     txnMan->cv.notify_all();
-                    MOT_LOG_INFO("唤醒3 csn %llu, txn txnid %llu, txn_state %llu %llu", csn, txnMan->GetCommitSequenceNumber(), txnMan->commit_state, now_to_us());
+                    // MOT_LOG_INFO("唤醒3 csn %llu, txn txnid %llu, txn_state %llu %llu", csn, txnMan->GetCommitSequenceNumber(), txnMan->commit_state, now_to_us());
                     txn_map.remove(csn);
                 }
                 else {
@@ -2750,6 +2750,7 @@ void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn nod
                 client_other_message_queue.enqueue(std::move(std::make_unique<proto::Message>()));
             }
         }
+        //client wake up test
         // client_receive_message_queue.wait_dequeue(msg_ptr);
         // if(msg_ptr != nullptr) {
         //     if(msg_ptr->type_case() == proto::Message::TypeCase::kReplyTxnResultToClient) {
@@ -2791,6 +2792,8 @@ void ClientManagerThreadMain(uint64_t id) { //handle other status
     MOT_LOG_INFO("线程 ClientManagerThreadMain 开始工作 %llu", id);
     ClientInit();
     client_init_ok_flag.store(true);
+    usleep(1000000);
+    client_start_flag.store(true);
     auto msg_ptr = std::make_unique<proto::Message>();
     while(true) {
         client_other_message_queue.wait_dequeue(msg_ptr);
@@ -2841,7 +2844,7 @@ BlockingConcurrentQueue<std::unique_ptr<proto::Message>> storage_read_queue;
 // std::shared_ptr<zmq::context_t> storage_send_context, storage_listen_context, storage_listen_context_sub_mod;
 // std::shared_ptr<zmq::socket_t> storage_send_socket, storage_listen_socket, storage_listen_socket_sub_mod;
 
-std::atomic<bool> storage_init_ok_flag(false);
+std::atomic<bool> storage_init_ok_flag(false), storage_start_flag(false);
 std::atomic<uint64_t> update_epoch(0), current_epoch(5), total_commit_txn_num(0);
 std::vector<std::unique_ptr<std::atomic<uint64_t>>> shoule_update_txn_num, updated_txn_num;
 
@@ -2983,27 +2986,33 @@ void StorageUpdaterThreadMain(uint64_t id) {
             key_id = 0;
             for (auto row_it = txn_ptr->row().begin(); row_it != txn_ptr->row().end(); ++row_it) {
                 MOT::Table* table = MOTAdaptor::m_engine->GetTableManager()->GetTable(row_it->table_name());
-                
-                key_length = row_it->key().length();
-                buf = MOT::MemSessionAlloc(key_length);
-                if(buf == nullptr) Assert(false);
-                key = new (buf) MOT::Key(key_length);
-                key->CpKey((uint8_t*)row_it->key().c_str(), key_length);
-                key_str = key->GetKeyStr();
-                // MOT_LOG_INFO("txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
-                
-                res = table->FindRow(key, row ,0);
-                if (res != MOT::RC_OK) { // an error
-                    // look up fail!~
-                    row = nullptr;
-                }
-                if (row != nullptr && (row_it->op_type() == proto::OpType::Update || row_it->op_type() == proto::OpType::Delete)) {
-                    if(lock_map[row] == false) {
-                        row->LockRow();
-                        lock_map[row] = true;
-                        // MOT_LOG_INFO("txn LockRow %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
+                if(table != nullptr) {
+                    key_length = row_it->key().length();
+                    buf = MOT::MemSessionAlloc(key_length);
+                    if(buf == nullptr) Assert(false);
+                    key = new (buf) MOT::Key(key_length);
+                    key->CpKey((uint8_t*)row_it->key().c_str(), key_length);
+                    key_str = key->GetKeyStr();
+                    // MOT_LOG_INFO("txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
+                    
+                    res = table->FindRow(key, row ,0);
+                    if (res != MOT::RC_OK) { // an error
+                        // look up fail!~
+                        row = nullptr;
+                    }
+                    if (row != nullptr && (row_it->op_type() == proto::OpType::Update || row_it->op_type() == proto::OpType::Delete)) {
+                        if(lock_map[row] == false) {
+                            row->LockRow();
+                            lock_map[row] = true;
+                            // MOT_LOG_INFO("txn LockRow %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
+                        }
                     }
                 }
+                else {
+                    table = nullptr, row = nullptr;
+                    MOT_LOG_INFO("Taas Storage Updater 3010 table is null %s", row_it->table_name().c_str());
+                }
+                
                 vec_key.push_back(key);
                 vec_row.push_back(row);
                 vec_table.push_back(table);
@@ -3016,6 +3025,9 @@ void StorageUpdaterThreadMain(uint64_t id) {
                 row = vec_row[key_id];
                 table = vec_table[key_id];
                 key_id ++;
+                if(table == nullptr) {
+                    continue;
+                }
                 if (row == nullptr) { // insert or delete by others before this epoch
                     /* code */
                 }
@@ -3040,10 +3052,10 @@ void StorageUpdaterThreadMain(uint64_t id) {
                         MOT_REPORT_ERROR(
                             MOT_ERROR_OOM, "Insert Row ", "Failed to insert new row for table %s", table->GetLongTableName().c_str());
                     }
-                    // if(res != MOT::RC_OK) {
-                    //     MOT_REPORT_ERROR(
-                    //         MOT_ERROR_OOM, "Taas Insert Row ", "Failed to insert new row for table %s", table->GetLongTableName().c_str());
-                    // }
+                    if(res != MOT::RC_OK) {
+                        MOT_REPORT_ERROR(
+                            MOT_ERROR_OOM, "Taas Insert Row ", "Failed to insert new row for table %s", table->GetLongTableName().c_str());
+                    }
                     // MOT_LOG_INFO("Storage Insert %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
                 }
             }
@@ -3060,6 +3072,9 @@ void StorageUpdaterThreadMain(uint64_t id) {
                 row = vec_row[key_id];
                 table = vec_table[key_id];
                 key_id ++;
+                if(table == nullptr) {
+                    continue;
+                }
                 if (row == nullptr) { // an error
                     /* code */
                 }
@@ -3176,6 +3191,8 @@ void StorageManagerThreadMain(uint64_t id) { //handle other status
     MOT_LOG_INFO("线程 StorageManagerThreadMain 开始工作 %llu", id);
     StorageInit();
     storage_init_ok_flag.store(true);
+    usleep(1000000);
+    storage_start_flag.store(true);
     auto msg_ptr = std::make_unique<proto::Message>();
 
     zmq::message_t message;
