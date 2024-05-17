@@ -2795,8 +2795,8 @@ void SendPullRequest(uint64_t epoch_id) {
     request->mutable_recv_node()->CopyFrom(dest_node);
     request->set_epoch_id(epoch_id);
     auto serialized_txn_str_ptr = std::make_unique<std::string>();
-    Gzip(msg->get(), serialized_txn_str_ptr.get());
-    storage_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, serialized_str.release())));
+    Gzip(msg.get(), serialized_txn_str_ptr.get());
+    storage_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, serialized_txn_str_ptr.release())));
     storage_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, nullptr)));
 }
 
