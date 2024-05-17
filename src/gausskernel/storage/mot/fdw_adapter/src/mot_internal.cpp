@@ -2732,7 +2732,6 @@ void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn nod
 
 void ClientManagerThreadMain(uint64_t id) { //handle other status
     MOT_LOG_INFO("线程 ClientManagerThreadMain 开始工作 %llu", id);
-    ClientInit();
     client_init_ok_flag.store(true);
     usleep(1000000);
     client_start_flag.store(true);
@@ -2783,7 +2782,7 @@ BlockingConcurrentQueue<std::unique_ptr<proto::Message>> storage_read_queue;
 
 std::atomic<bool> storage_init_ok_flag(false), storage_start_flag(false);
 std::atomic<uint64_t> update_epoch(0), current_epoch(5), total_commit_txn_num(0);
-std::vector<std::unique_ptr<std::atomic<uint64_t>>> shoule_update_txn_num, updated_txn_num;
+//std::vector<std::unique_ptr<std::atomic<uint64_t>>> shoule_update_txn_num, updated_txn_num;
 
 uint64_t start_time_ll, start_physical_epoch = 1, cache_size = 10000;
 struct timeval start_time;
@@ -2796,7 +2795,7 @@ void SendPullRequest(uint64_t epoch_id) {
     request->mutable_send_node()->CopyFrom(src_node);
     request->mutable_recv_node()->CopyFrom(dest_node);
     request->set_epoch_id(epoch_id);
-    auto serialized_str = Gzip(std::move(msg));
+    Gzip(std::move(msg), serialized_str);
     storage_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, serialized_str)));
     storage_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, nullptr)));
 }
@@ -2813,9 +2812,9 @@ bool HandlePackTxnx(proto::Message* msg) {
         //     //cache the log
         //     continue;
         // }
-        auto epoch = response->epoch_id();
-        auto epoch_mod = epoch % cache_size;
-        shoule_update_txn_num[epoch_mod]->store(response->txn_num());
+//        auto epoch = response->epoch_id();
+//        auto epoch_mod = epoch % cache_size;
+//        shoule_update_txn_num[epoch_mod]->store(response->txn_num());
         for(int i = 0; i < (int) response->txns_size(); i ++) {
             auto txn = std::make_unique<proto::Transaction>(std::move(std::move(response->txns(i))));
             storage_update_queue.enqueue(std::move(txn));
@@ -2825,9 +2824,9 @@ bool HandlePackTxnx(proto::Message* msg) {
     }
     else {
         auto* response = &(msg->storage_push_response());
-        auto epoch = response->epoch_id();
-        auto epoch_mod = epoch % cache_size;
-        shoule_update_txn_num[epoch_mod]->store(response->txn_num());
+//        auto epoch = response->epoch_id();
+//        auto epoch_mod = epoch % cache_size;
+//        shoule_update_txn_num[epoch_mod]->store(response->txn_num());
         for(int i = 0; i < (int) response->txns_size(); i ++) {
             auto txn = std::make_unique<proto::Transaction>(std::move(std::move(response->txns(i))));
             storage_update_queue.enqueue(std::move(txn));
@@ -2848,7 +2847,7 @@ void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from
     while(true) {
         storage_listen_message_queue.wait_dequeue(message_ptr);
         if(message_ptr != nullptr && message_ptr->size() > 0) {
-            message_string_ptr = = std::make_unique<std::string>(static_cast<const char*>(message_ptr->data()), message_ptr->size());
+            message_string_ptr = std::make_unique<std::string>(static_cast<const char*>(message_ptr->data()), message_ptr->size());
             msg_ptr = std::make_unique<proto::Message>();
             UnGzip(msg_ptr.get(), message_string_ptr.get());
 
@@ -2856,7 +2855,7 @@ void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from
                 //handle the log and update it in mot
 //                HandlePackTxnx(msg_ptr.get());
                 auto* response = &(msg_ptr->storage_push_response())
-                shoule_update_txn_num[epoch_mod]->store(response->txn_num());
+//                shoule_update_txn_num[epoch_mod]->store(response->txn_num());
                 for(int i = 0; i < (int) response->txns_size(); i ++) {
                     auto txn = std::make_unique<proto::Transaction>(std::move(std::move(response->txns(i))));
                     storage_update_queue.enqueue(std::move(txn));
@@ -3141,7 +3140,7 @@ void StorageSendThreadMain(uint64_t id) { // PULL PUSH
     MOT_LOG_INFO("线程 StorageSendThreadMain 开始工作 %llu", id);
     auto storage_send_context = std::make_shared<zmq::context_t>(1);
     auto storage_send_socket = std::make_shared<zmq::socket_t>(*storage_send_context, ZMQ_PUSH);
-    storage_send_socket->connect("tcp://" + kTxnNodeIp[txn_ip_index] + ":5553"); 
+    storage_send_socket->connect("tcp://" + kTxnNodeIp[0] + ":5553");
     std::unique_ptr<send_thread_params> params;
     std::unique_ptr<zmq::message_t> msg;
     while(storage_init_ok_flag.load() == false) usleep(200);
