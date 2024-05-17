@@ -2623,7 +2623,7 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
 
     {
         string* serialized_txn_str_ptr;
-        Gzip(std::move(msg), serialized_txn_str_ptr);
+        Gzip(msg.get(), serialized_txn_str_ptr);
         client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, serialized_txn_str_ptr)));
         client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, nullptr)));
     }
@@ -2636,7 +2636,7 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
 void ClientSendThreadMain(uint64_t id) {
     SetCPU();
     MOT_LOG_INFO("线程 ClientSendThreadMain 开始工作 %llu", id);
-    std::vextor<std::shared_ptr<zmq::socket_t>> client_send_sockets;
+    std::vector<std::shared_ptr<zmq::socket_t>> client_send_sockets;
     auto client_send_context = std::make_shared<zmq::context_t>(1);
     for(int i = 0; i < kTxnNodeIp.size(); i ++) {
         auto client_send_socket = std::make_shared<zmq::socket_t>(*client_send_context, ZMQ_PUSH);
@@ -2674,12 +2674,10 @@ void ClientListenThreadMain(uint64_t id) {
         socket_listen.connect("tcp://" + kTxnNodeIp[txn_ip_index] + ":5552");
     }
     MOT_LOG_INFO("线程开始工作 ClientListenThreadMain Client SUB %s", ("tcp://" + kTxnNodeIp[txn_ip_index] + ":5552").c_str());
-    std::unique_ptr<proto::Message> msg_ptr;
     std::unique_ptr<zmq::message_t> message_ptr;
-    std::unique_ptr<std::string> message_string_ptr;
     while(true) {
         socket_listen.recv(&(*message_ptr));
-        client_listen_message_queue.enqueue(std::move(msg_ptr));
+        client_listen_message_queue.enqueue(std::move(message_ptr));
         client_listen_message_queue.enqueue(std::move(nullptr));
     }
 }
