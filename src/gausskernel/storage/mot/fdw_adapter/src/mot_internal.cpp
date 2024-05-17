@@ -2782,7 +2782,6 @@ BlockingConcurrentQueue<std::unique_ptr<proto::Message>> storage_read_queue;
 
 std::atomic<bool> storage_init_ok_flag(false), storage_start_flag(false);
 std::atomic<uint64_t> update_epoch(0), current_epoch(5), total_commit_txn_num(0);
-//std::vector<std::unique_ptr<std::atomic<uint64_t>>> shoule_update_txn_num, updated_txn_num;
 
 uint64_t start_time_ll, start_physical_epoch = 1, cache_size = 10000;
 struct timeval start_time;
@@ -2795,8 +2794,9 @@ void SendPullRequest(uint64_t epoch_id) {
     request->mutable_send_node()->CopyFrom(src_node);
     request->mutable_recv_node()->CopyFrom(dest_node);
     request->set_epoch_id(epoch_id);
-    Gzip(std::move(msg), serialized_str);
-    storage_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, serialized_str)));
+    auto serialized_txn_str_ptr = std::make_unique<std::string>();
+    Gzip(msg->get(), serialized_txn_str_ptr.get());
+    storage_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, serialized_str.release())));
     storage_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, nullptr)));
 }
 
@@ -2805,34 +2805,21 @@ bool HandlePackTxnx(proto::Message* msg) {
         auto* response = &(msg->storage_pull_response());
         if(response->result() == proto::Result::Fail) {
             //Send pull request to another server or wait a few seconds
-            // SendPullRequest(response->epoch_id());
             return true;
-        } 
-        // if(response->epoch_id() != update_epoch.load()) {
-        //     //cache the log
-        //     continue;
-        // }
-//        auto epoch = response->epoch_id();
-//        auto epoch_mod = epoch % cache_size;
-//        shoule_update_txn_num[epoch_mod]->store(response->txn_num());
+        }
         for(int i = 0; i < (int) response->txns_size(); i ++) {
             auto txn = std::make_unique<proto::Transaction>(std::move(std::move(response->txns(i))));
             storage_update_queue.enqueue(std::move(txn));
         }
         storage_update_queue.enqueue(nullptr);
-        // MOT_LOG_INFO("收到一个Epoch txn pack %llu txxn num %llu", epoch, response->txns_size());
     }
     else {
         auto* response = &(msg->storage_push_response());
-//        auto epoch = response->epoch_id();
-//        auto epoch_mod = epoch % cache_size;
-//        shoule_update_txn_num[epoch_mod]->store(response->txn_num());
         for(int i = 0; i < (int) response->txns_size(); i ++) {
             auto txn = std::make_unique<proto::Transaction>(std::move(std::move(response->txns(i))));
             storage_update_queue.enqueue(std::move(txn));
         }
         storage_update_queue.enqueue(nullptr);
-        // MOT_LOG_INFO("收到一个Epoch txn pack %llu txxn num %llu", epoch, response->txns_size());
     }
 }
 
@@ -2842,8 +2829,6 @@ void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from
     std::unique_ptr<zmq::message_t> message_ptr;
     std::unique_ptr<proto::Message> msg_ptr; 
     std::unique_ptr<std::string> message_string_ptr;
-    auto txn = std::make_unique<proto::Transaction>();
-    uint64_t epoch, epoch_mod;
     while(true) {
         storage_listen_message_queue.wait_dequeue(message_ptr);
         if(message_ptr != nullptr && message_ptr->size() > 0) {
@@ -2852,15 +2837,7 @@ void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from
             UnGzip(msg_ptr.get(), message_string_ptr.get());
 
             if(msg_ptr->type_case() == proto::Message::TypeCase::kStoragePullResponse || msg_ptr->type_case() == proto::Message::TypeCase::kStoragePushResponse) {
-                //handle the log and update it in mot
-//                HandlePackTxnx(msg_ptr.get());
-                auto* response = &(msg_ptr->storage_push_response())
-//                shoule_update_txn_num[epoch_mod]->store(response->txn_num());
-                for(int i = 0; i < (int) response->txns_size(); i ++) {
-                    auto txn = std::make_unique<proto::Transaction>(std::move(std::move(response->txns(i))));
-                    storage_update_queue.enqueue(std::move(txn));
-                }
-                storage_update_queue.enqueue(nullptr);
+                HandlePackTxnx(msg_ptr.get());
             }
             else {
                 storage_other_message_queue.enqueue(std::move(msg_ptr));
@@ -2892,7 +2869,6 @@ void StorageUpdaterThreadMain(uint64_t id) {
     auto txn_ptr = std::make_unique<proto::Transaction>();
     while(true) {
         storage_update_queue.wait_dequeue(txn_ptr);
-        // continue;
         //handle txn read request
         if(txn_ptr != nullptr) {
             // MOT_LOG_INFO("Storage 收到一个事务");
@@ -3027,15 +3003,6 @@ void StorageUpdaterThreadMain(uint64_t id) {
                     commit_txn_num = 0;
                     MOT_LOG_INFO("共提交 txn num %llu", num);
                 }
-//                auto epoch = txn_ptr->commit_epoch();
-//                auto epoch_mod = epoch % cache_size;
-//                auto num = updated_txn_num[epoch_mod]->fetch_add(1);
-//                if(num + 1 == shoule_update_txn_num[epoch_mod]->load()) { // update finish
-//                    update_epoch.fetch_add(1);
-//                    // MOT_LOG_INFO("完成一个Epoch txn pack 写入 epoch %llu txn num %llu", epoch, num);
-//                    shoule_update_txn_num[epoch_mod]->store(0);
-//                    updated_txn_num[epoch_mod]->store(0);
-//                }
             }
         }
     }
@@ -3053,13 +3020,6 @@ void StorageReaderThreadMain(uint64_t id) {
 }
 
 void StorageInit() {
-
-//    shoule_update_txn_num.resize(cache_size + 2);
-//    updated_txn_num.resize(cache_size + 2);
-//    for(int i = 0; i < (int)cache_size; i ++) {
-//        shoule_update_txn_num[i] = std::make_unique<std::atomic<uint64_t>>(0);
-//        updated_txn_num[i] = std::make_unique<std::atomic<uint64_t>>(0);
-//    }
     
 }
 
