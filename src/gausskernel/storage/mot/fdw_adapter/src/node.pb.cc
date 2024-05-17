@@ -58,7 +58,8 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 
 const char descriptor_table_protodef_node_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\nnode.proto\022\005proto\",\n\004Node\022\n\n\002ip\030\001 \001(\t\022"
-  "\014\n\004port\030\002 \001(\r\022\n\n\002id\030\003 \001(\rb\006proto3"
+  "\014\n\004port\030\002 \001(\r\022\n\n\002id\030\003 \001(\rB\016Z\014./taas_prot"
+  "ob\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_node_2eproto_deps[1] = {
 };
@@ -68,7 +69,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_nod
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_node_2eproto_once;
 static bool descriptor_table_node_2eproto_initialized = false;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_node_2eproto = {
-  &descriptor_table_node_2eproto_initialized, descriptor_table_protodef_node_2eproto, "node.proto", 73,
+  &descriptor_table_node_2eproto_initialized, descriptor_table_protodef_node_2eproto, "node.proto", 89,
   &descriptor_table_node_2eproto_once, descriptor_table_node_2eproto_sccs, descriptor_table_node_2eproto_deps, 1, 0,
   schemas, file_default_instances, TableStruct_node_2eproto::offsets,
   file_level_metadata_node_2eproto, 1, file_level_enum_descriptors_node_2eproto, file_level_service_descriptors_node_2eproto,

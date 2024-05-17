@@ -139,7 +139,7 @@ const char descriptor_table_protodef_storage_2eproto[] PROTOBUF_SECTION_VARIABLE
   "\022\020\n\010epoch_id\030\002 \001(\004\022\017\n\007txn_num\030\003 \001(\004\022 \n\004t"
   "xns\030\004 \003(\0132\022.proto.Transaction\022\036\n\tsend_no"
   "de\030\005 \001(\0132\013.proto.Node\022\036\n\trecv_node\030\006 \001(\013"
-  "2\013.proto.Nodeb\006proto3"
+  "2\013.proto.NodeB\016Z\014./taas_protob\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_storage_2eproto_deps[2] = {
   &::descriptor_table_node_2eproto,
@@ -153,7 +153,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_sto
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_storage_2eproto_once;
 static bool descriptor_table_storage_2eproto_initialized = false;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_storage_2eproto = {
-  &descriptor_table_storage_2eproto_initialized, descriptor_table_protodef_storage_2eproto, "storage.proto", 541,
+  &descriptor_table_storage_2eproto_initialized, descriptor_table_protodef_storage_2eproto, "storage.proto", 557,
   &descriptor_table_storage_2eproto_once, descriptor_table_storage_2eproto_sccs, descriptor_table_storage_2eproto_deps, 3, 2,
   schemas, file_default_instances, TableStruct_storage_2eproto::offsets,
   file_level_metadata_storage_2eproto, 3, file_level_enum_descriptors_storage_2eproto, file_level_service_descriptors_storage_2eproto,

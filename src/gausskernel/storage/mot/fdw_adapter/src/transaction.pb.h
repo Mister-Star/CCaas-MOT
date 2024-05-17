@@ -101,15 +101,38 @@ inline bool Result_Parse(
 }
 enum TxnType : int {
   ClientTxn = 0,
-  RemoteServerTxn = 1,
-  EpochEndFlag = 2,
-  CommittedTxn = 3,
+  ShardedClientTxn = 1,
+  EpochShardEndFlag = 2,
+  RemoteServerTxn = 3,
+  EpochRemoteServerEndFlag = 4,
+  BackUpTxn = 5,
+  EpochBackUpEndFlag = 6,
+  CommittedTxn = 7,
+  EpochCommittedTxnEndFlag = 8,
+  AbortSet = 20,
+  InsertSet = 21,
+  EpochShardACK = 30,
+  EpochRemoteServerACK = 31,
+  BackUpACK = 32,
+  AbortSetACK = 33,
+  InsertSetACK = 34,
+  EpochLogPushDownComplete = 35,
+  NullMark = 40,
+  Lock_ok = 51,
+  Lock_abort = 52,
+  Prepare_req = 53,
+  Prepare_ok = 54,
+  Prepare_abort = 55,
+  Commit_req = 56,
+  Commit_ok = 57,
+  Commit_abort = 58,
+  Abort_txn = 59,
   TxnType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
   TxnType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
 };
 bool TxnType_IsValid(int value);
 constexpr TxnType TxnType_MIN = ClientTxn;
-constexpr TxnType TxnType_MAX = CommittedTxn;
+constexpr TxnType TxnType_MAX = Abort_txn;
 constexpr int TxnType_ARRAYSIZE = TxnType_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* TxnType_descriptor();
@@ -437,6 +460,7 @@ class Row :
     kTableNameFieldNumber = 2,
     kKeyFieldNumber = 3,
     kDataFieldNumber = 4,
+    kCsnFieldNumber = 6,
     kOpTypeFieldNumber = 1,
   };
   // repeated .proto.Column column = 5;
@@ -505,6 +529,15 @@ class Row :
   std::string* _internal_mutable_data();
   public:
 
+  // uint64 csn = 6;
+  void clear_csn();
+  ::PROTOBUF_NAMESPACE_ID::uint64 csn() const;
+  void set_csn(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_csn() const;
+  void _internal_set_csn(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
   // .proto.OpType op_type = 1;
   void clear_op_type();
   ::proto::OpType op_type() const;
@@ -523,6 +556,7 @@ class Row :
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr table_name_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr key_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr data_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 csn_;
   int op_type_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_transaction_2eproto;
@@ -636,15 +670,20 @@ class Transaction :
 
   enum : int {
     kRowFieldNumber = 1,
-    kServerIpFieldNumber = 5,
-    kClientIpFieldNumber = 7,
+    kTxnServerIpFieldNumber = 13,
+    kClientIpFieldNumber = 15,
+    kStorageTypeFieldNumber = 22,
     kStartEpochFieldNumber = 2,
     kCommitEpochFieldNumber = 3,
     kCsnFieldNumber = 4,
-    kServerIdFieldNumber = 6,
-    kTxnTypeFieldNumber = 9,
-    kClientTxnIdFieldNumber = 8,
-    kTxnStateFieldNumber = 10,
+    kTxnTypeFieldNumber = 5,
+    kTxnStateFieldNumber = 6,
+    kMessageServerIdFieldNumber = 10,
+    kShardIdFieldNumber = 11,
+    kShardServerIdFieldNumber = 12,
+    kClientTxnIdFieldNumber = 16,
+    kTxnServerIdFieldNumber = 14,
+    kStorageTotalNumFieldNumber = 21,
   };
   // repeated .proto.Row row = 1;
   int row_size() const;
@@ -664,23 +703,23 @@ class Transaction :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::proto::Row >&
       row() const;
 
-  // string server_ip = 5;
-  void clear_server_ip();
-  const std::string& server_ip() const;
-  void set_server_ip(const std::string& value);
-  void set_server_ip(std::string&& value);
-  void set_server_ip(const char* value);
-  void set_server_ip(const char* value, size_t size);
-  std::string* mutable_server_ip();
-  std::string* release_server_ip();
-  void set_allocated_server_ip(std::string* server_ip);
+  // string txn_server_ip = 13;
+  void clear_txn_server_ip();
+  const std::string& txn_server_ip() const;
+  void set_txn_server_ip(const std::string& value);
+  void set_txn_server_ip(std::string&& value);
+  void set_txn_server_ip(const char* value);
+  void set_txn_server_ip(const char* value, size_t size);
+  std::string* mutable_txn_server_ip();
+  std::string* release_txn_server_ip();
+  void set_allocated_txn_server_ip(std::string* txn_server_ip);
   private:
-  const std::string& _internal_server_ip() const;
-  void _internal_set_server_ip(const std::string& value);
-  std::string* _internal_mutable_server_ip();
+  const std::string& _internal_txn_server_ip() const;
+  void _internal_set_txn_server_ip(const std::string& value);
+  std::string* _internal_mutable_txn_server_ip();
   public:
 
-  // string client_ip = 7;
+  // string client_ip = 15;
   void clear_client_ip();
   const std::string& client_ip() const;
   void set_client_ip(const std::string& value);
@@ -694,6 +733,22 @@ class Transaction :
   const std::string& _internal_client_ip() const;
   void _internal_set_client_ip(const std::string& value);
   std::string* _internal_mutable_client_ip();
+  public:
+
+  // string storage_type = 22;
+  void clear_storage_type();
+  const std::string& storage_type() const;
+  void set_storage_type(const std::string& value);
+  void set_storage_type(std::string&& value);
+  void set_storage_type(const char* value);
+  void set_storage_type(const char* value, size_t size);
+  std::string* mutable_storage_type();
+  std::string* release_storage_type();
+  void set_allocated_storage_type(std::string* storage_type);
+  private:
+  const std::string& _internal_storage_type() const;
+  void _internal_set_storage_type(const std::string& value);
+  std::string* _internal_mutable_storage_type();
   public:
 
   // uint64 start_epoch = 2;
@@ -723,16 +778,7 @@ class Transaction :
   void _internal_set_csn(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
-  // uint32 server_id = 6;
-  void clear_server_id();
-  ::PROTOBUF_NAMESPACE_ID::uint32 server_id() const;
-  void set_server_id(::PROTOBUF_NAMESPACE_ID::uint32 value);
-  private:
-  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_server_id() const;
-  void _internal_set_server_id(::PROTOBUF_NAMESPACE_ID::uint32 value);
-  public:
-
-  // .proto.TxnType txn_type = 9;
+  // .proto.TxnType txn_type = 5;
   void clear_txn_type();
   ::proto::TxnType txn_type() const;
   void set_txn_type(::proto::TxnType value);
@@ -741,16 +787,7 @@ class Transaction :
   void _internal_set_txn_type(::proto::TxnType value);
   public:
 
-  // uint64 client_txn_id = 8;
-  void clear_client_txn_id();
-  ::PROTOBUF_NAMESPACE_ID::uint64 client_txn_id() const;
-  void set_client_txn_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
-  private:
-  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_client_txn_id() const;
-  void _internal_set_client_txn_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
-  public:
-
-  // .proto.TxnState txn_state = 10;
+  // .proto.TxnState txn_state = 6;
   void clear_txn_state();
   ::proto::TxnState txn_state() const;
   void set_txn_state(::proto::TxnState value);
@@ -759,21 +796,80 @@ class Transaction :
   void _internal_set_txn_state(::proto::TxnState value);
   public:
 
+  // uint64 message_server_id = 10;
+  void clear_message_server_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 message_server_id() const;
+  void set_message_server_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_message_server_id() const;
+  void _internal_set_message_server_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 shard_id = 11;
+  void clear_shard_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 shard_id() const;
+  void set_shard_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_shard_id() const;
+  void _internal_set_shard_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 shard_server_id = 12;
+  void clear_shard_server_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 shard_server_id() const;
+  void set_shard_server_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_shard_server_id() const;
+  void _internal_set_shard_server_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 client_txn_id = 16;
+  void clear_client_txn_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 client_txn_id() const;
+  void set_client_txn_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_client_txn_id() const;
+  void _internal_set_client_txn_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint32 txn_server_id = 14;
+  void clear_txn_server_id();
+  ::PROTOBUF_NAMESPACE_ID::uint32 txn_server_id() const;
+  void set_txn_server_id(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_txn_server_id() const;
+  void _internal_set_txn_server_id(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint64 storage_total_num = 21;
+  void clear_storage_total_num();
+  ::PROTOBUF_NAMESPACE_ID::uint64 storage_total_num() const;
+  void set_storage_total_num(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_storage_total_num() const;
+  void _internal_set_storage_total_num(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
   // @@protoc_insertion_point(class_scope:proto.Transaction)
  private:
   class _Internal;
 
   ::PROTOBUF_NAMESPACE_ID::internal::InternalMetadataWithArena _internal_metadata_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::proto::Row > row_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr server_ip_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr txn_server_ip_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr client_ip_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr storage_type_;
   ::PROTOBUF_NAMESPACE_ID::uint64 start_epoch_;
   ::PROTOBUF_NAMESPACE_ID::uint64 commit_epoch_;
   ::PROTOBUF_NAMESPACE_ID::uint64 csn_;
-  ::PROTOBUF_NAMESPACE_ID::uint32 server_id_;
   int txn_type_;
-  ::PROTOBUF_NAMESPACE_ID::uint64 client_txn_id_;
   int txn_state_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 message_server_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 shard_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 shard_server_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 client_txn_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 txn_server_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 storage_total_num_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_transaction_2eproto;
 };
@@ -1111,6 +1207,26 @@ Row::column() const {
   return column_;
 }
 
+// uint64 csn = 6;
+inline void Row::clear_csn() {
+  csn_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Row::_internal_csn() const {
+  return csn_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Row::csn() const {
+  // @@protoc_insertion_point(field_get:proto.Row.csn)
+  return _internal_csn();
+}
+inline void Row::_internal_set_csn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  csn_ = value;
+}
+inline void Row::set_csn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_csn(value);
+  // @@protoc_insertion_point(field_set:proto.Row.csn)
+}
+
 // -------------------------------------------------------------------
 
 // Transaction
@@ -1214,87 +1330,187 @@ inline void Transaction::set_csn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   // @@protoc_insertion_point(field_set:proto.Transaction.csn)
 }
 
-// string server_ip = 5;
-inline void Transaction::clear_server_ip() {
-  server_ip_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+// .proto.TxnType txn_type = 5;
+inline void Transaction::clear_txn_type() {
+  txn_type_ = 0;
 }
-inline const std::string& Transaction::server_ip() const {
-  // @@protoc_insertion_point(field_get:proto.Transaction.server_ip)
-  return _internal_server_ip();
+inline ::proto::TxnType Transaction::_internal_txn_type() const {
+  return static_cast< ::proto::TxnType >(txn_type_);
 }
-inline void Transaction::set_server_ip(const std::string& value) {
-  _internal_set_server_ip(value);
-  // @@protoc_insertion_point(field_set:proto.Transaction.server_ip)
+inline ::proto::TxnType Transaction::txn_type() const {
+  // @@protoc_insertion_point(field_get:proto.Transaction.txn_type)
+  return _internal_txn_type();
 }
-inline std::string* Transaction::mutable_server_ip() {
-  // @@protoc_insertion_point(field_mutable:proto.Transaction.server_ip)
-  return _internal_mutable_server_ip();
-}
-inline const std::string& Transaction::_internal_server_ip() const {
-  return server_ip_.GetNoArena();
-}
-inline void Transaction::_internal_set_server_ip(const std::string& value) {
+inline void Transaction::_internal_set_txn_type(::proto::TxnType value) {
   
-  server_ip_.SetNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value);
+  txn_type_ = value;
 }
-inline void Transaction::set_server_ip(std::string&& value) {
+inline void Transaction::set_txn_type(::proto::TxnType value) {
+  _internal_set_txn_type(value);
+  // @@protoc_insertion_point(field_set:proto.Transaction.txn_type)
+}
+
+// .proto.TxnState txn_state = 6;
+inline void Transaction::clear_txn_state() {
+  txn_state_ = 0;
+}
+inline ::proto::TxnState Transaction::_internal_txn_state() const {
+  return static_cast< ::proto::TxnState >(txn_state_);
+}
+inline ::proto::TxnState Transaction::txn_state() const {
+  // @@protoc_insertion_point(field_get:proto.Transaction.txn_state)
+  return _internal_txn_state();
+}
+inline void Transaction::_internal_set_txn_state(::proto::TxnState value) {
   
-  server_ip_.SetNoArena(
+  txn_state_ = value;
+}
+inline void Transaction::set_txn_state(::proto::TxnState value) {
+  _internal_set_txn_state(value);
+  // @@protoc_insertion_point(field_set:proto.Transaction.txn_state)
+}
+
+// uint64 message_server_id = 10;
+inline void Transaction::clear_message_server_id() {
+  message_server_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Transaction::_internal_message_server_id() const {
+  return message_server_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Transaction::message_server_id() const {
+  // @@protoc_insertion_point(field_get:proto.Transaction.message_server_id)
+  return _internal_message_server_id();
+}
+inline void Transaction::_internal_set_message_server_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  message_server_id_ = value;
+}
+inline void Transaction::set_message_server_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_message_server_id(value);
+  // @@protoc_insertion_point(field_set:proto.Transaction.message_server_id)
+}
+
+// uint64 shard_id = 11;
+inline void Transaction::clear_shard_id() {
+  shard_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Transaction::_internal_shard_id() const {
+  return shard_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Transaction::shard_id() const {
+  // @@protoc_insertion_point(field_get:proto.Transaction.shard_id)
+  return _internal_shard_id();
+}
+inline void Transaction::_internal_set_shard_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  shard_id_ = value;
+}
+inline void Transaction::set_shard_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_shard_id(value);
+  // @@protoc_insertion_point(field_set:proto.Transaction.shard_id)
+}
+
+// uint64 shard_server_id = 12;
+inline void Transaction::clear_shard_server_id() {
+  shard_server_id_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Transaction::_internal_shard_server_id() const {
+  return shard_server_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Transaction::shard_server_id() const {
+  // @@protoc_insertion_point(field_get:proto.Transaction.shard_server_id)
+  return _internal_shard_server_id();
+}
+inline void Transaction::_internal_set_shard_server_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  shard_server_id_ = value;
+}
+inline void Transaction::set_shard_server_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_shard_server_id(value);
+  // @@protoc_insertion_point(field_set:proto.Transaction.shard_server_id)
+}
+
+// string txn_server_ip = 13;
+inline void Transaction::clear_txn_server_ip() {
+  txn_server_ip_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+}
+inline const std::string& Transaction::txn_server_ip() const {
+  // @@protoc_insertion_point(field_get:proto.Transaction.txn_server_ip)
+  return _internal_txn_server_ip();
+}
+inline void Transaction::set_txn_server_ip(const std::string& value) {
+  _internal_set_txn_server_ip(value);
+  // @@protoc_insertion_point(field_set:proto.Transaction.txn_server_ip)
+}
+inline std::string* Transaction::mutable_txn_server_ip() {
+  // @@protoc_insertion_point(field_mutable:proto.Transaction.txn_server_ip)
+  return _internal_mutable_txn_server_ip();
+}
+inline const std::string& Transaction::_internal_txn_server_ip() const {
+  return txn_server_ip_.GetNoArena();
+}
+inline void Transaction::_internal_set_txn_server_ip(const std::string& value) {
+  
+  txn_server_ip_.SetNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value);
+}
+inline void Transaction::set_txn_server_ip(std::string&& value) {
+  
+  txn_server_ip_.SetNoArena(
     &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
-  // @@protoc_insertion_point(field_set_rvalue:proto.Transaction.server_ip)
+  // @@protoc_insertion_point(field_set_rvalue:proto.Transaction.txn_server_ip)
 }
-inline void Transaction::set_server_ip(const char* value) {
+inline void Transaction::set_txn_server_ip(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  server_ip_.SetNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
-  // @@protoc_insertion_point(field_set_char:proto.Transaction.server_ip)
+  txn_server_ip_.SetNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:proto.Transaction.txn_server_ip)
 }
-inline void Transaction::set_server_ip(const char* value, size_t size) {
+inline void Transaction::set_txn_server_ip(const char* value, size_t size) {
   
-  server_ip_.SetNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+  txn_server_ip_.SetNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size));
-  // @@protoc_insertion_point(field_set_pointer:proto.Transaction.server_ip)
+  // @@protoc_insertion_point(field_set_pointer:proto.Transaction.txn_server_ip)
 }
-inline std::string* Transaction::_internal_mutable_server_ip() {
+inline std::string* Transaction::_internal_mutable_txn_server_ip() {
   
-  return server_ip_.MutableNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  return txn_server_ip_.MutableNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
-inline std::string* Transaction::release_server_ip() {
-  // @@protoc_insertion_point(field_release:proto.Transaction.server_ip)
+inline std::string* Transaction::release_txn_server_ip() {
+  // @@protoc_insertion_point(field_release:proto.Transaction.txn_server_ip)
   
-  return server_ip_.ReleaseNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  return txn_server_ip_.ReleaseNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
-inline void Transaction::set_allocated_server_ip(std::string* server_ip) {
-  if (server_ip != nullptr) {
+inline void Transaction::set_allocated_txn_server_ip(std::string* txn_server_ip) {
+  if (txn_server_ip != nullptr) {
     
   } else {
     
   }
-  server_ip_.SetAllocatedNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), server_ip);
-  // @@protoc_insertion_point(field_set_allocated:proto.Transaction.server_ip)
+  txn_server_ip_.SetAllocatedNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), txn_server_ip);
+  // @@protoc_insertion_point(field_set_allocated:proto.Transaction.txn_server_ip)
 }
 
-// uint32 server_id = 6;
-inline void Transaction::clear_server_id() {
-  server_id_ = 0u;
+// uint32 txn_server_id = 14;
+inline void Transaction::clear_txn_server_id() {
+  txn_server_id_ = 0u;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint32 Transaction::_internal_server_id() const {
-  return server_id_;
+inline ::PROTOBUF_NAMESPACE_ID::uint32 Transaction::_internal_txn_server_id() const {
+  return txn_server_id_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint32 Transaction::server_id() const {
-  // @@protoc_insertion_point(field_get:proto.Transaction.server_id)
-  return _internal_server_id();
+inline ::PROTOBUF_NAMESPACE_ID::uint32 Transaction::txn_server_id() const {
+  // @@protoc_insertion_point(field_get:proto.Transaction.txn_server_id)
+  return _internal_txn_server_id();
 }
-inline void Transaction::_internal_set_server_id(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+inline void Transaction::_internal_set_txn_server_id(::PROTOBUF_NAMESPACE_ID::uint32 value) {
   
-  server_id_ = value;
+  txn_server_id_ = value;
 }
-inline void Transaction::set_server_id(::PROTOBUF_NAMESPACE_ID::uint32 value) {
-  _internal_set_server_id(value);
-  // @@protoc_insertion_point(field_set:proto.Transaction.server_id)
+inline void Transaction::set_txn_server_id(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_txn_server_id(value);
+  // @@protoc_insertion_point(field_set:proto.Transaction.txn_server_id)
 }
 
-// string client_ip = 7;
+// string client_ip = 15;
 inline void Transaction::clear_client_ip() {
   client_ip_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
@@ -1354,7 +1570,7 @@ inline void Transaction::set_allocated_client_ip(std::string* client_ip) {
   // @@protoc_insertion_point(field_set_allocated:proto.Transaction.client_ip)
 }
 
-// uint64 client_txn_id = 8;
+// uint64 client_txn_id = 16;
 inline void Transaction::clear_client_txn_id() {
   client_txn_id_ = PROTOBUF_ULONGLONG(0);
 }
@@ -1374,44 +1590,84 @@ inline void Transaction::set_client_txn_id(::PROTOBUF_NAMESPACE_ID::uint64 value
   // @@protoc_insertion_point(field_set:proto.Transaction.client_txn_id)
 }
 
-// .proto.TxnType txn_type = 9;
-inline void Transaction::clear_txn_type() {
-  txn_type_ = 0;
+// uint64 storage_total_num = 21;
+inline void Transaction::clear_storage_total_num() {
+  storage_total_num_ = PROTOBUF_ULONGLONG(0);
 }
-inline ::proto::TxnType Transaction::_internal_txn_type() const {
-  return static_cast< ::proto::TxnType >(txn_type_);
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Transaction::_internal_storage_total_num() const {
+  return storage_total_num_;
 }
-inline ::proto::TxnType Transaction::txn_type() const {
-  // @@protoc_insertion_point(field_get:proto.Transaction.txn_type)
-  return _internal_txn_type();
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Transaction::storage_total_num() const {
+  // @@protoc_insertion_point(field_get:proto.Transaction.storage_total_num)
+  return _internal_storage_total_num();
 }
-inline void Transaction::_internal_set_txn_type(::proto::TxnType value) {
+inline void Transaction::_internal_set_storage_total_num(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   
-  txn_type_ = value;
+  storage_total_num_ = value;
 }
-inline void Transaction::set_txn_type(::proto::TxnType value) {
-  _internal_set_txn_type(value);
-  // @@protoc_insertion_point(field_set:proto.Transaction.txn_type)
+inline void Transaction::set_storage_total_num(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_storage_total_num(value);
+  // @@protoc_insertion_point(field_set:proto.Transaction.storage_total_num)
 }
 
-// .proto.TxnState txn_state = 10;
-inline void Transaction::clear_txn_state() {
-  txn_state_ = 0;
+// string storage_type = 22;
+inline void Transaction::clear_storage_type() {
+  storage_type_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
-inline ::proto::TxnState Transaction::_internal_txn_state() const {
-  return static_cast< ::proto::TxnState >(txn_state_);
+inline const std::string& Transaction::storage_type() const {
+  // @@protoc_insertion_point(field_get:proto.Transaction.storage_type)
+  return _internal_storage_type();
 }
-inline ::proto::TxnState Transaction::txn_state() const {
-  // @@protoc_insertion_point(field_get:proto.Transaction.txn_state)
-  return _internal_txn_state();
+inline void Transaction::set_storage_type(const std::string& value) {
+  _internal_set_storage_type(value);
+  // @@protoc_insertion_point(field_set:proto.Transaction.storage_type)
 }
-inline void Transaction::_internal_set_txn_state(::proto::TxnState value) {
+inline std::string* Transaction::mutable_storage_type() {
+  // @@protoc_insertion_point(field_mutable:proto.Transaction.storage_type)
+  return _internal_mutable_storage_type();
+}
+inline const std::string& Transaction::_internal_storage_type() const {
+  return storage_type_.GetNoArena();
+}
+inline void Transaction::_internal_set_storage_type(const std::string& value) {
   
-  txn_state_ = value;
+  storage_type_.SetNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value);
 }
-inline void Transaction::set_txn_state(::proto::TxnState value) {
-  _internal_set_txn_state(value);
-  // @@protoc_insertion_point(field_set:proto.Transaction.txn_state)
+inline void Transaction::set_storage_type(std::string&& value) {
+  
+  storage_type_.SetNoArena(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:proto.Transaction.storage_type)
+}
+inline void Transaction::set_storage_type(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  storage_type_.SetNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:proto.Transaction.storage_type)
+}
+inline void Transaction::set_storage_type(const char* value, size_t size) {
+  
+  storage_type_.SetNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:proto.Transaction.storage_type)
+}
+inline std::string* Transaction::_internal_mutable_storage_type() {
+  
+  return storage_type_.MutableNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+}
+inline std::string* Transaction::release_storage_type() {
+  // @@protoc_insertion_point(field_release:proto.Transaction.storage_type)
+  
+  return storage_type_.ReleaseNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+}
+inline void Transaction::set_allocated_storage_type(std::string* storage_type) {
+  if (storage_type != nullptr) {
+    
+  } else {
+    
+  }
+  storage_type_.SetAllocatedNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), storage_type);
+  // @@protoc_insertion_point(field_set_allocated:proto.Transaction.storage_type)
 }
 
 #ifdef __GNUC__

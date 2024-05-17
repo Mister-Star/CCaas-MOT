@@ -735,8 +735,8 @@ const char descriptor_table_protodef_server_2eproto[] PROTOBUF_SECTION_VARIABLE(
   "sponse\022\014\n\004from\030\001 \001(\r\022\n\n\002to\030\002 \001(\004\022\020\n\010epoc"
   "h_id\030\003 \001(\004\"f\n\031ChangeServerStateResponse\022"
   "\014\n\004from\030\001 \001(\r\022\n\n\002to\030\002 \001(\r\022\016\n\006target\030\003 \001("
-  "\r\022\020\n\010epoch_id\030\004 \001(\004\022\r\n\005state\030\005 \001(\rb\006prot"
-  "o3"
+  "\r\022\020\n\010epoch_id\030\004 \001(\004\022\r\n\005state\030\005 \001(\rB\016Z\014./"
+  "taas_protob\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_server_2eproto_deps[2] = {
   &::descriptor_table_node_2eproto,
@@ -768,7 +768,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_ser
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_server_2eproto_once;
 static bool descriptor_table_server_2eproto_initialized = false;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_server_2eproto = {
-  &descriptor_table_server_2eproto_initialized, descriptor_table_protodef_server_2eproto, "server.proto", 2202,
+  &descriptor_table_server_2eproto_initialized, descriptor_table_protodef_server_2eproto, "server.proto", 2218,
   &descriptor_table_server_2eproto_once, descriptor_table_server_2eproto_sccs, descriptor_table_server_2eproto_deps, 21, 2,
   schemas, file_default_instances, TableStruct_server_2eproto::offsets,
   file_level_metadata_server_2eproto, 21, file_level_enum_descriptors_server_2eproto, file_level_service_descriptors_server_2eproto,

@@ -93,7 +93,8 @@ const char descriptor_table_protodef_client_2eproto[] PROTOBUF_SECTION_VARIABLE(
   "ent_ip\030\001 \001(\t\022\016\n\006txn_id\030\002 \001(\004\022\030\n\004rows\030\003 \003"
   "(\0132\n.proto.Row\"]\n\022ClientReadResponse\022\035\n\006"
   "result\030\001 \001(\0162\r.proto.Result\022\016\n\006txn_id\030\002 "
-  "\001(\004\022\030\n\004rows\030\003 \003(\0132\n.proto.Rowb\006proto3"
+  "\001(\004\022\030\n\004rows\030\003 \003(\0132\n.proto.RowB\016Z\014./taas_"
+  "protob\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_client_2eproto_deps[2] = {
   &::descriptor_table_node_2eproto,
@@ -106,7 +107,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_cli
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_client_2eproto_once;
 static bool descriptor_table_client_2eproto_initialized = false;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_client_2eproto = {
-  &descriptor_table_client_2eproto_initialized, descriptor_table_protodef_client_2eproto, "client.proto", 237,
+  &descriptor_table_client_2eproto_initialized, descriptor_table_protodef_client_2eproto, "client.proto", 253,
   &descriptor_table_client_2eproto_once, descriptor_table_client_2eproto_sccs, descriptor_table_client_2eproto_deps, 2, 2,
   schemas, file_default_instances, TableStruct_client_2eproto::offsets,
   file_level_metadata_client_2eproto, 2, file_level_enum_descriptors_client_2eproto, file_level_service_descriptors_client_2eproto,

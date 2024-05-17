@@ -96,6 +96,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_transaction_2eproto::offsets[]
   PROTOBUF_FIELD_OFFSET(::proto::Row, key_),
   PROTOBUF_FIELD_OFFSET(::proto::Row, data_),
   PROTOBUF_FIELD_OFFSET(::proto::Row, column_),
+  PROTOBUF_FIELD_OFFSET(::proto::Row, csn_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::proto::Transaction, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -105,17 +106,22 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_transaction_2eproto::offsets[]
   PROTOBUF_FIELD_OFFSET(::proto::Transaction, start_epoch_),
   PROTOBUF_FIELD_OFFSET(::proto::Transaction, commit_epoch_),
   PROTOBUF_FIELD_OFFSET(::proto::Transaction, csn_),
-  PROTOBUF_FIELD_OFFSET(::proto::Transaction, server_ip_),
-  PROTOBUF_FIELD_OFFSET(::proto::Transaction, server_id_),
-  PROTOBUF_FIELD_OFFSET(::proto::Transaction, client_ip_),
-  PROTOBUF_FIELD_OFFSET(::proto::Transaction, client_txn_id_),
   PROTOBUF_FIELD_OFFSET(::proto::Transaction, txn_type_),
   PROTOBUF_FIELD_OFFSET(::proto::Transaction, txn_state_),
+  PROTOBUF_FIELD_OFFSET(::proto::Transaction, message_server_id_),
+  PROTOBUF_FIELD_OFFSET(::proto::Transaction, shard_id_),
+  PROTOBUF_FIELD_OFFSET(::proto::Transaction, shard_server_id_),
+  PROTOBUF_FIELD_OFFSET(::proto::Transaction, txn_server_ip_),
+  PROTOBUF_FIELD_OFFSET(::proto::Transaction, txn_server_id_),
+  PROTOBUF_FIELD_OFFSET(::proto::Transaction, client_ip_),
+  PROTOBUF_FIELD_OFFSET(::proto::Transaction, client_txn_id_),
+  PROTOBUF_FIELD_OFFSET(::proto::Transaction, storage_total_num_),
+  PROTOBUF_FIELD_OFFSET(::proto::Transaction, storage_type_),
 };
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::proto::Column)},
   { 7, -1, sizeof(::proto::Row)},
-  { 17, -1, sizeof(::proto::Transaction)},
+  { 18, -1, sizeof(::proto::Transaction)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -126,22 +132,37 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 
 const char descriptor_table_protodef_transaction_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\021transaction.proto\022\005proto\032\nnode.proto\"#"
-  "\n\006Column\022\n\n\002id\030\001 \001(\r\022\r\n\005value\030\002 \001(\014\"s\n\003R"
-  "ow\022\036\n\007op_type\030\001 \001(\0162\r.proto.OpType\022\022\n\nta"
-  "ble_name\030\002 \001(\t\022\013\n\003key\030\003 \001(\014\022\014\n\004data\030\004 \001("
-  "\014\022\035\n\006column\030\005 \003(\0132\r.proto.Column\"\364\001\n\013Tra"
-  "nsaction\022\027\n\003row\030\001 \003(\0132\n.proto.Row\022\023\n\013sta"
-  "rt_epoch\030\002 \001(\004\022\024\n\014commit_epoch\030\003 \001(\004\022\013\n\003"
-  "csn\030\004 \001(\004\022\021\n\tserver_ip\030\005 \001(\t\022\021\n\tserver_i"
-  "d\030\006 \001(\r\022\021\n\tclient_ip\030\007 \001(\t\022\025\n\rclient_txn"
-  "_id\030\010 \001(\004\022 \n\010txn_type\030\t \001(\0162\016.proto.TxnT"
-  "ype\022\"\n\ttxn_state\030\n \001(\0162\017.proto.TxnState*"
-  "\037\n\006Result\022\010\n\004Fail\020\000\022\013\n\007Success\020\001*Q\n\007TxnT"
-  "ype\022\r\n\tClientTxn\020\000\022\023\n\017RemoteServerTxn\020\001\022"
-  "\020\n\014EpochEndFlag\020\002\022\020\n\014CommittedTxn\020\003*,\n\010T"
-  "xnState\022\t\n\005Empty\020\000\022\t\n\005Abort\020\001\022\n\n\006Commit\020"
-  "\002*6\n\006OpType\022\010\n\004Read\020\000\022\n\n\006Insert\020\001\022\n\n\006Upd"
-  "ate\020\002\022\n\n\006Delete\020\003b\006proto3"
+  "\n\006Column\022\n\n\002id\030\001 \001(\r\022\r\n\005value\030\002 \001(\014\"\200\001\n\003"
+  "Row\022\036\n\007op_type\030\001 \001(\0162\r.proto.OpType\022\022\n\nt"
+  "able_name\030\002 \001(\t\022\013\n\003key\030\003 \001(\014\022\014\n\004data\030\004 \001"
+  "(\014\022\035\n\006column\030\005 \003(\0132\r.proto.Column\022\013\n\003csn"
+  "\030\006 \001(\004\"\363\002\n\013Transaction\022\027\n\003row\030\001 \003(\0132\n.pr"
+  "oto.Row\022\023\n\013start_epoch\030\002 \001(\004\022\024\n\014commit_e"
+  "poch\030\003 \001(\004\022\013\n\003csn\030\004 \001(\004\022 \n\010txn_type\030\005 \001("
+  "\0162\016.proto.TxnType\022\"\n\ttxn_state\030\006 \001(\0162\017.p"
+  "roto.TxnState\022\031\n\021message_server_id\030\n \001(\004"
+  "\022\020\n\010shard_id\030\013 \001(\004\022\027\n\017shard_server_id\030\014 "
+  "\001(\004\022\025\n\rtxn_server_ip\030\r \001(\t\022\025\n\rtxn_server"
+  "_id\030\016 \001(\r\022\021\n\tclient_ip\030\017 \001(\t\022\025\n\rclient_t"
+  "xn_id\030\020 \001(\004\022\031\n\021storage_total_num\030\025 \001(\004\022\024"
+  "\n\014storage_type\030\026 \001(\t*\037\n\006Result\022\010\n\004Fail\020\000"
+  "\022\013\n\007Success\020\001*\210\004\n\007TxnType\022\r\n\tClientTxn\020\000"
+  "\022\024\n\020ShardedClientTxn\020\001\022\025\n\021EpochShardEndF"
+  "lag\020\002\022\023\n\017RemoteServerTxn\020\003\022\034\n\030EpochRemot"
+  "eServerEndFlag\020\004\022\r\n\tBackUpTxn\020\005\022\026\n\022Epoch"
+  "BackUpEndFlag\020\006\022\020\n\014CommittedTxn\020\007\022\034\n\030Epo"
+  "chCommittedTxnEndFlag\020\010\022\014\n\010AbortSet\020\024\022\r\n"
+  "\tInsertSet\020\025\022\021\n\rEpochShardACK\020\036\022\030\n\024Epoch"
+  "RemoteServerACK\020\037\022\r\n\tBackUpACK\020 \022\017\n\013Abor"
+  "tSetACK\020!\022\020\n\014InsertSetACK\020\"\022\034\n\030EpochLogP"
+  "ushDownComplete\020#\022\014\n\010NullMark\020(\022\013\n\007Lock_"
+  "ok\0203\022\016\n\nLock_abort\0204\022\017\n\013Prepare_req\0205\022\016\n"
+  "\nPrepare_ok\0206\022\021\n\rPrepare_abort\0207\022\016\n\nComm"
+  "it_req\0208\022\r\n\tCommit_ok\0209\022\020\n\014Commit_abort\020"
+  ":\022\r\n\tAbort_txn\020;*,\n\010TxnState\022\t\n\005Empty\020\000\022"
+  "\t\n\005Abort\020\001\022\n\n\006Commit\020\002*6\n\006OpType\022\010\n\004Read"
+  "\020\000\022\n\n\006Insert\020\001\022\n\n\006Update\020\002\022\n\n\006Delete\020\003B\016"
+  "Z\014./taas_protob\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_transaction_2eproto_deps[1] = {
   &::descriptor_table_node_2eproto,
@@ -154,7 +175,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_tra
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_transaction_2eproto_once;
 static bool descriptor_table_transaction_2eproto_initialized = false;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_transaction_2eproto = {
-  &descriptor_table_transaction_2eproto_initialized, descriptor_table_protodef_transaction_2eproto, "transaction.proto", 665,
+  &descriptor_table_transaction_2eproto_initialized, descriptor_table_protodef_transaction_2eproto, "transaction.proto", 1262,
   &descriptor_table_transaction_2eproto_once, descriptor_table_transaction_2eproto_sccs, descriptor_table_transaction_2eproto_deps, 3, 1,
   schemas, file_default_instances, TableStruct_transaction_2eproto::offsets,
   file_level_metadata_transaction_2eproto, 3, file_level_enum_descriptors_transaction_2eproto, file_level_service_descriptors_transaction_2eproto,
@@ -187,6 +208,29 @@ bool TxnType_IsValid(int value) {
     case 1:
     case 2:
     case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 20:
+    case 21:
+    case 30:
+    case 31:
+    case 32:
+    case 33:
+    case 34:
+    case 35:
+    case 40:
+    case 51:
+    case 52:
+    case 53:
+    case 54:
+    case 55:
+    case 56:
+    case 57:
+    case 58:
+    case 59:
       return true;
     default:
       return false;
@@ -476,7 +520,9 @@ Row::Row(const Row& from)
   if (!from._internal_data().empty()) {
     data_.AssignWithDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from.data_);
   }
-  op_type_ = from.op_type_;
+  ::memcpy(&csn_, &from.csn_,
+    static_cast<size_t>(reinterpret_cast<char*>(&op_type_) -
+    reinterpret_cast<char*>(&csn_)) + sizeof(op_type_));
   // @@protoc_insertion_point(copy_constructor:proto.Row)
 }
 
@@ -485,7 +531,9 @@ void Row::SharedCtor() {
   table_name_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   key_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   data_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  op_type_ = 0;
+  ::memset(&csn_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&op_type_) -
+      reinterpret_cast<char*>(&csn_)) + sizeof(op_type_));
 }
 
 Row::~Row() {
@@ -518,7 +566,9 @@ void Row::Clear() {
   table_name_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   key_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   data_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  op_type_ = 0;
+  ::memset(&csn_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&op_type_) -
+      reinterpret_cast<char*>(&csn_)) + sizeof(op_type_));
   _internal_metadata_.Clear();
 }
 
@@ -572,6 +622,13 @@ const char* Row::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::intern
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<42>(ptr));
+        } else goto handle_unusual;
+        continue;
+      // uint64 csn = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 48)) {
+          csn_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
+          CHK_(ptr);
         } else goto handle_unusual;
         continue;
       default: {
@@ -637,6 +694,12 @@ failure:
       InternalWriteMessage(5, this->_internal_column(i), target, stream);
   }
 
+  // uint64 csn = 6;
+  if (this->csn() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(6, this->_internal_csn(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields(), target, stream);
@@ -679,6 +742,13 @@ size_t Row::ByteSizeLong() const {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_data());
+  }
+
+  // uint64 csn = 6;
+  if (this->csn() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_csn());
   }
 
   // .proto.OpType op_type = 1;
@@ -731,6 +801,9 @@ void Row::MergeFrom(const Row& from) {
 
     data_.AssignWithDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from.data_);
   }
+  if (from.csn() != 0) {
+    _internal_set_csn(from._internal_csn());
+  }
   if (from.op_type() != 0) {
     _internal_set_op_type(from._internal_op_type());
   }
@@ -764,6 +837,7 @@ void Row::InternalSwap(Row* other) {
     GetArenaNoVirtual());
   data_.Swap(&other->data_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
     GetArenaNoVirtual());
+  swap(csn_, other->csn_);
   swap(op_type_, other->op_type_);
 }
 
@@ -790,27 +864,32 @@ Transaction::Transaction(const Transaction& from)
       _internal_metadata_(nullptr),
       row_(from.row_) {
   _internal_metadata_.MergeFrom(from._internal_metadata_);
-  server_ip_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_server_ip().empty()) {
-    server_ip_.AssignWithDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from.server_ip_);
+  txn_server_ip_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_txn_server_ip().empty()) {
+    txn_server_ip_.AssignWithDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from.txn_server_ip_);
   }
   client_ip_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_client_ip().empty()) {
     client_ip_.AssignWithDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from.client_ip_);
   }
+  storage_type_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_storage_type().empty()) {
+    storage_type_.AssignWithDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from.storage_type_);
+  }
   ::memcpy(&start_epoch_, &from.start_epoch_,
-    static_cast<size_t>(reinterpret_cast<char*>(&txn_state_) -
-    reinterpret_cast<char*>(&start_epoch_)) + sizeof(txn_state_));
+    static_cast<size_t>(reinterpret_cast<char*>(&storage_total_num_) -
+    reinterpret_cast<char*>(&start_epoch_)) + sizeof(storage_total_num_));
   // @@protoc_insertion_point(copy_constructor:proto.Transaction)
 }
 
 void Transaction::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_Transaction_transaction_2eproto.base);
-  server_ip_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  txn_server_ip_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   client_ip_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  storage_type_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::memset(&start_epoch_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&txn_state_) -
-      reinterpret_cast<char*>(&start_epoch_)) + sizeof(txn_state_));
+      reinterpret_cast<char*>(&storage_total_num_) -
+      reinterpret_cast<char*>(&start_epoch_)) + sizeof(storage_total_num_));
 }
 
 Transaction::~Transaction() {
@@ -819,8 +898,9 @@ Transaction::~Transaction() {
 }
 
 void Transaction::SharedDtor() {
-  server_ip_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  txn_server_ip_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   client_ip_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  storage_type_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
 void Transaction::SetCachedSize(int size) const {
@@ -839,11 +919,12 @@ void Transaction::Clear() {
   (void) cached_has_bits;
 
   row_.Clear();
-  server_ip_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  txn_server_ip_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   client_ip_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  storage_type_.ClearToEmptyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::memset(&start_epoch_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&txn_state_) -
-      reinterpret_cast<char*>(&start_epoch_)) + sizeof(txn_state_));
+      reinterpret_cast<char*>(&storage_total_num_) -
+      reinterpret_cast<char*>(&start_epoch_)) + sizeof(storage_total_num_));
   _internal_metadata_.Clear();
 }
 
@@ -887,52 +968,89 @@ const char* Transaction::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // string server_ip = 5;
+      // .proto.TxnType txn_type = 5;
       case 5:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
-          auto str = _internal_mutable_server_ip();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "proto.Transaction.server_ip"));
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 40)) {
+          ::PROTOBUF_NAMESPACE_ID::uint64 val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
           CHK_(ptr);
+          _internal_set_txn_type(static_cast<::proto::TxnType>(val));
         } else goto handle_unusual;
         continue;
-      // uint32 server_id = 6;
+      // .proto.TxnState txn_state = 6;
       case 6:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 48)) {
-          server_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
+          ::PROTOBUF_NAMESPACE_ID::uint64 val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
+          CHK_(ptr);
+          _internal_set_txn_state(static_cast<::proto::TxnState>(val));
+        } else goto handle_unusual;
+        continue;
+      // uint64 message_server_id = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 80)) {
+          message_server_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // string client_ip = 7;
-      case 7:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 58)) {
+      // uint64 shard_id = 11;
+      case 11:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 88)) {
+          shard_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 shard_server_id = 12;
+      case 12:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 96)) {
+          shard_server_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string txn_server_ip = 13;
+      case 13:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 106)) {
+          auto str = _internal_mutable_txn_server_ip();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "proto.Transaction.txn_server_ip"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint32 txn_server_id = 14;
+      case 14:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 112)) {
+          txn_server_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string client_ip = 15;
+      case 15:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 122)) {
           auto str = _internal_mutable_client_ip();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "proto.Transaction.client_ip"));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint64 client_txn_id = 8;
-      case 8:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 64)) {
+      // uint64 client_txn_id = 16;
+      case 16:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 128)) {
           client_txn_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .proto.TxnType txn_type = 9;
-      case 9:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 72)) {
-          ::PROTOBUF_NAMESPACE_ID::uint64 val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
+      // uint64 storage_total_num = 21;
+      case 21:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 168)) {
+          storage_total_num_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
           CHK_(ptr);
-          _internal_set_txn_type(static_cast<::proto::TxnType>(val));
         } else goto handle_unusual;
         continue;
-      // .proto.TxnState txn_state = 10;
-      case 10:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 80)) {
-          ::PROTOBUF_NAMESPACE_ID::uint64 val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint(&ptr);
+      // string storage_type = 22;
+      case 22:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 178)) {
+          auto str = _internal_mutable_storage_type();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "proto.Transaction.storage_type"));
           CHK_(ptr);
-          _internal_set_txn_state(static_cast<::proto::TxnState>(val));
         } else goto handle_unusual;
         continue;
       default: {
@@ -987,50 +1105,84 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(4, this->_internal_csn(), target);
   }
 
-  // string server_ip = 5;
-  if (this->server_ip().size() > 0) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_server_ip().data(), static_cast<int>(this->_internal_server_ip().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "proto.Transaction.server_ip");
-    target = stream->WriteStringMaybeAliased(
-        5, this->_internal_server_ip(), target);
-  }
-
-  // uint32 server_id = 6;
-  if (this->server_id() != 0) {
+  // .proto.TxnType txn_type = 5;
+  if (this->txn_type() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(6, this->_internal_server_id(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteEnumToArray(
+      5, this->_internal_txn_type(), target);
   }
 
-  // string client_ip = 7;
+  // .proto.TxnState txn_state = 6;
+  if (this->txn_state() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteEnumToArray(
+      6, this->_internal_txn_state(), target);
+  }
+
+  // uint64 message_server_id = 10;
+  if (this->message_server_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(10, this->_internal_message_server_id(), target);
+  }
+
+  // uint64 shard_id = 11;
+  if (this->shard_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(11, this->_internal_shard_id(), target);
+  }
+
+  // uint64 shard_server_id = 12;
+  if (this->shard_server_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(12, this->_internal_shard_server_id(), target);
+  }
+
+  // string txn_server_ip = 13;
+  if (this->txn_server_ip().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_txn_server_ip().data(), static_cast<int>(this->_internal_txn_server_ip().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "proto.Transaction.txn_server_ip");
+    target = stream->WriteStringMaybeAliased(
+        13, this->_internal_txn_server_ip(), target);
+  }
+
+  // uint32 txn_server_id = 14;
+  if (this->txn_server_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(14, this->_internal_txn_server_id(), target);
+  }
+
+  // string client_ip = 15;
   if (this->client_ip().size() > 0) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_client_ip().data(), static_cast<int>(this->_internal_client_ip().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "proto.Transaction.client_ip");
     target = stream->WriteStringMaybeAliased(
-        7, this->_internal_client_ip(), target);
+        15, this->_internal_client_ip(), target);
   }
 
-  // uint64 client_txn_id = 8;
+  // uint64 client_txn_id = 16;
   if (this->client_txn_id() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(8, this->_internal_client_txn_id(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(16, this->_internal_client_txn_id(), target);
   }
 
-  // .proto.TxnType txn_type = 9;
-  if (this->txn_type() != 0) {
+  // uint64 storage_total_num = 21;
+  if (this->storage_total_num() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteEnumToArray(
-      9, this->_internal_txn_type(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(21, this->_internal_storage_total_num(), target);
   }
 
-  // .proto.TxnState txn_state = 10;
-  if (this->txn_state() != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteEnumToArray(
-      10, this->_internal_txn_state(), target);
+  // string storage_type = 22;
+  if (this->storage_type().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_storage_type().data(), static_cast<int>(this->_internal_storage_type().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "proto.Transaction.storage_type");
+    target = stream->WriteStringMaybeAliased(
+        22, this->_internal_storage_type(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1056,18 +1208,25 @@ size_t Transaction::ByteSizeLong() const {
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
-  // string server_ip = 5;
-  if (this->server_ip().size() > 0) {
+  // string txn_server_ip = 13;
+  if (this->txn_server_ip().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_server_ip());
+        this->_internal_txn_server_ip());
   }
 
-  // string client_ip = 7;
+  // string client_ip = 15;
   if (this->client_ip().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_client_ip());
+  }
+
+  // string storage_type = 22;
+  if (this->storage_type().size() > 0) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_storage_type());
   }
 
   // uint64 start_epoch = 2;
@@ -1091,30 +1250,58 @@ size_t Transaction::ByteSizeLong() const {
         this->_internal_csn());
   }
 
-  // uint32 server_id = 6;
-  if (this->server_id() != 0) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
-        this->_internal_server_id());
-  }
-
-  // .proto.TxnType txn_type = 9;
+  // .proto.TxnType txn_type = 5;
   if (this->txn_type() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::EnumSize(this->_internal_txn_type());
   }
 
-  // uint64 client_txn_id = 8;
-  if (this->client_txn_id() != 0) {
+  // .proto.TxnState txn_state = 6;
+  if (this->txn_state() != 0) {
     total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::EnumSize(this->_internal_txn_state());
+  }
+
+  // uint64 message_server_id = 10;
+  if (this->message_server_id() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_message_server_id());
+  }
+
+  // uint64 shard_id = 11;
+  if (this->shard_id() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_shard_id());
+  }
+
+  // uint64 shard_server_id = 12;
+  if (this->shard_server_id() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_shard_server_id());
+  }
+
+  // uint64 client_txn_id = 16;
+  if (this->client_txn_id() != 0) {
+    total_size += 2 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
         this->_internal_client_txn_id());
   }
 
-  // .proto.TxnState txn_state = 10;
-  if (this->txn_state() != 0) {
+  // uint32 txn_server_id = 14;
+  if (this->txn_server_id() != 0) {
     total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::EnumSize(this->_internal_txn_state());
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
+        this->_internal_txn_server_id());
+  }
+
+  // uint64 storage_total_num = 21;
+  if (this->storage_total_num() != 0) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_storage_total_num());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1149,13 +1336,17 @@ void Transaction::MergeFrom(const Transaction& from) {
   (void) cached_has_bits;
 
   row_.MergeFrom(from.row_);
-  if (from.server_ip().size() > 0) {
+  if (from.txn_server_ip().size() > 0) {
 
-    server_ip_.AssignWithDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from.server_ip_);
+    txn_server_ip_.AssignWithDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from.txn_server_ip_);
   }
   if (from.client_ip().size() > 0) {
 
     client_ip_.AssignWithDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from.client_ip_);
+  }
+  if (from.storage_type().size() > 0) {
+
+    storage_type_.AssignWithDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from.storage_type_);
   }
   if (from.start_epoch() != 0) {
     _internal_set_start_epoch(from._internal_start_epoch());
@@ -1166,17 +1357,29 @@ void Transaction::MergeFrom(const Transaction& from) {
   if (from.csn() != 0) {
     _internal_set_csn(from._internal_csn());
   }
-  if (from.server_id() != 0) {
-    _internal_set_server_id(from._internal_server_id());
-  }
   if (from.txn_type() != 0) {
     _internal_set_txn_type(from._internal_txn_type());
+  }
+  if (from.txn_state() != 0) {
+    _internal_set_txn_state(from._internal_txn_state());
+  }
+  if (from.message_server_id() != 0) {
+    _internal_set_message_server_id(from._internal_message_server_id());
+  }
+  if (from.shard_id() != 0) {
+    _internal_set_shard_id(from._internal_shard_id());
+  }
+  if (from.shard_server_id() != 0) {
+    _internal_set_shard_server_id(from._internal_shard_server_id());
   }
   if (from.client_txn_id() != 0) {
     _internal_set_client_txn_id(from._internal_client_txn_id());
   }
-  if (from.txn_state() != 0) {
-    _internal_set_txn_state(from._internal_txn_state());
+  if (from.txn_server_id() != 0) {
+    _internal_set_txn_server_id(from._internal_txn_server_id());
+  }
+  if (from.storage_total_num() != 0) {
+    _internal_set_storage_total_num(from._internal_storage_total_num());
   }
 }
 
@@ -1202,17 +1405,23 @@ void Transaction::InternalSwap(Transaction* other) {
   using std::swap;
   _internal_metadata_.Swap(&other->_internal_metadata_);
   row_.InternalSwap(&other->row_);
-  server_ip_.Swap(&other->server_ip_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+  txn_server_ip_.Swap(&other->txn_server_ip_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
     GetArenaNoVirtual());
   client_ip_.Swap(&other->client_ip_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+    GetArenaNoVirtual());
+  storage_type_.Swap(&other->storage_type_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
     GetArenaNoVirtual());
   swap(start_epoch_, other->start_epoch_);
   swap(commit_epoch_, other->commit_epoch_);
   swap(csn_, other->csn_);
-  swap(server_id_, other->server_id_);
   swap(txn_type_, other->txn_type_);
-  swap(client_txn_id_, other->client_txn_id_);
   swap(txn_state_, other->txn_state_);
+  swap(message_server_id_, other->message_server_id_);
+  swap(shard_id_, other->shard_id_);
+  swap(shard_server_id_, other->shard_server_id_);
+  swap(client_txn_id_, other->client_txn_id_);
+  swap(txn_server_id_, other->txn_server_id_);
+  swap(storage_total_num_, other->storage_total_num_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata Transaction::GetMetadata() const {
