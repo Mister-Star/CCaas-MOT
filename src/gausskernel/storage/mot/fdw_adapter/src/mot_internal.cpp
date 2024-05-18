@@ -2671,9 +2671,9 @@ void ClientListenThreadMain(uint64_t id) {
     socket_listen.setsockopt(ZMQ_SUBSCRIBE, "", 0);
     socket_listen.setsockopt(ZMQ_RCVHWM, &queue_length, sizeof(queue_length));
     for(int i = 0; i < kTxnNodeIp.size(); i ++) {
-        socket_listen.connect("tcp://" + kTxnNodeIp[txn_ip_index] + ":5552");
+        socket_listen.connect("tcp://" + kTxnNodeIp[i] + ":5552");
+        MOT_LOG_INFO("线程开始工作 ClientListenThreadMain Client SUB %s", ("tcp://" + kTxnNodeIp[i] + ":5552").c_str());
     }
-    MOT_LOG_INFO("线程开始工作 ClientListenThreadMain Client SUB %s", ("tcp://" + kTxnNodeIp[txn_ip_index] + ":5552").c_str());
     std::unique_ptr<zmq::message_t> message_ptr;
     while(true) {
         socket_listen.recv(&(*message_ptr));
