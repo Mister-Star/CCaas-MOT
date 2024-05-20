@@ -72,7 +72,7 @@
 #include "mm_cfg.h"
 #include "jit_statistics.h"
 #include "gaussdb_config_loader.h"
-#include <cstdio> 
+#include <cstdio>
 #include <stdio.h>
 #include <iostream>
 #include "string"
@@ -2350,7 +2350,7 @@ public:
         if (iter != _map_temp.end()) {
             if (iter->second == v) {
                 _map_temp.erase(iter);
-            } 
+            }
         }
     }
 
@@ -2371,7 +2371,7 @@ public:
         }
     }
 
-    void unsafe_clear() { 
+    void unsafe_clear() {
         for(uint64_t i = 0; i < _N; i ++){
             _map[i].clear();
         }
@@ -2539,10 +2539,10 @@ BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>> storage_update_queu
 
 //**************************************************************************************************************************************************************************************************
 //*****                                                                                                                                                                                        *****
-//*****                                                                                                                                                                                        ***** 
+//*****                                                                                                                                                                                        *****
 //*****                                                                                      TAAS    Client                                                                                    *****
-//*****                                                                                                                                                                                        ***** 
-//*****                                                                                                                                                                                        ***** 
+//*****                                                                                                                                                                                        *****
+//*****                                                                                                                                                                                        *****
 //**************************************************************************************************************************************************************************************************
 
 BlockingConcurrentQueue<std::unique_ptr<zmq::message_t>> client_listen_message_queue;
@@ -2565,7 +2565,7 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
     proto::OpType op_type;
     MOT::Row* local_row = nullptr;
     MOT::Key* key = nullptr;
-    void* buf = nullptr; 
+    void* buf = nullptr;
     uint64_t fieldCnt;
     const MOT::Access* access = nullptr;
     MOT::BitmapSet* bmp;
@@ -2611,18 +2611,18 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
     txn->set_client_txn_id(txMan->GetCommitSequenceNumber());
     txn->set_csn(txMan->GetCommitSequenceNumber());
     txn->set_storage_type("mot");
-    
+
     MOT::TxnManager* txnMan_ptr = nullptr;
     auto csn = txMan->GetCommitSequenceNumber();
     txn_map.insert(csn, txMan, &txnMan_ptr);
-    if(txnMan_ptr != nullptr && txnMan_ptr->commit_state == MOT::RC::RC_WAIT) { 
+    if(txnMan_ptr != nullptr && txnMan_ptr->commit_state == MOT::RC::RC_WAIT) {
         //抢占了别人的 hash map 出现冲突 abort 前一个，然后存储当前的
         txnMan_ptr->commit_state = MOT::RC::RC_ABORT;
         txnMan_ptr->cv.notify_all();
     }
 
     {
-        string* serialized_txn_str_ptr;
+        string* serialized_txn_str_ptr = new string();
         Gzip(msg.get(), serialized_txn_str_ptr);
         client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, serialized_txn_str_ptr)));
         client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, nullptr)));
@@ -2668,15 +2668,14 @@ void ClientListenThreadMain(uint64_t id) {
     zmq::context_t listen_context(1);
     zmq::socket_t socket_listen(listen_context, ZMQ_PULL);
     int queue_length = 0;
-    socket_listen.setsockopt(ZMQ_SUBSCRIBE, "", 0);
     socket_listen.setsockopt(ZMQ_RCVHWM, &queue_length, sizeof(queue_length));
-    for(int i = 0; i < kTxnNodeIp.size(); i ++) {
-        socket_listen.connect("tcp://" + kTxnNodeIp[i] + ":5552");
-        MOT_LOG_INFO("线程开始工作 ClientListenThreadMain Client SUB %s", ("tcp://" + kTxnNodeIp[i] + ":5552").c_str());
-    }
+    socket_listen.bind("tcp://*:5552");
+    MOT_LOG_INFO("线程开始工作 ClientListenThreadMain Client PULL tcp://*:5552");
     std::unique_ptr<zmq::message_t> message_ptr;
     while(true) {
+        message_ptr = std::make_unique<zmq::message_t>();
         socket_listen.recv(&(*message_ptr));
+//        MOT_LOG_INFO("Client PULL Receive a Txn");
         client_listen_message_queue.enqueue(std::move(message_ptr));
         client_listen_message_queue.enqueue(std::move(nullptr));
     }
@@ -2690,9 +2689,10 @@ void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn nod
     std::unique_ptr<proto::Message> msg_ptr;
     MOT::TxnManager* txnMan;
     uint64_t csn = 0;
-    
+
     while(true) {
         client_listen_message_queue.wait_dequeue(message_ptr);
+//        MOT_LOG_INFO("Client 收到一个事务");
         if(message_ptr != nullptr && message_ptr->size() > 0) {
             message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()),message_ptr->size());
             msg_ptr = std::make_unique<proto::Message>();
@@ -2701,7 +2701,7 @@ void ClientWorker1ThreadMain(uint64_t id) { // handle result return from Txn nod
                 //wake up local thread and return the commit result
                 auto& txn = msg_ptr->reply_txn_result_to_client();
                 csn = txn.client_txn_id();
-                // MOT_LOG_INFO("唤醒2 csn %llu %llu", csn, now_to_us());
+//                 MOT_LOG_INFO("唤醒2 csn %llu %llu", csn, now_to_us());
                 if(txn_map.get_value(csn, txnMan)) {
                     if(txn.txn_state() == proto::TxnState::Commit) {
                         txnMan->commit_state = MOT::RC::RC_OK;
@@ -2767,10 +2767,10 @@ void ClientManagerThreadMain(uint64_t id) { //handle other status
 
 //**************************************************************************************************************************************************************************************************
 //*****                                                                                                                                                                                        *****
-//*****                                                                                                                                                                                        ***** 
+//*****                                                                                                                                                                                        *****
 //*****                                                                                      TAAS    Storage                                                                                   *****
-//*****                                                                                                                                                                                        ***** 
-//*****                                                                                                                                                                                        ***** 
+//*****                                                                                                                                                                                        *****
+//*****                                                                                                                                                                                        *****
 //**************************************************************************************************************************************************************************************************
 
 BlockingConcurrentQueue<std::unique_ptr<zmq::message_t>> storage_listen_message_queue;
@@ -2825,7 +2825,7 @@ void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from
     SetCPU();
     MOT_LOG_INFO("线程 StorageMessageManagerThreadMain 开始工作 %llu", id);
     std::unique_ptr<zmq::message_t> message_ptr;
-    std::unique_ptr<proto::Message> msg_ptr; 
+    std::unique_ptr<proto::Message> msg_ptr;
     std::unique_ptr<std::string> message_string_ptr;
     while(true) {
         storage_listen_message_queue.wait_dequeue(message_ptr);
@@ -2843,7 +2843,7 @@ void StorageMessageManagerThreadMain(uint64_t id) { // handle result return from
             }
         }
     }
-} 
+}
 
 void StorageUpdaterThreadMain(uint64_t id) {
     MOT_LOG_INFO("线程 StorageUpdaterThreadMain 开始工作 %llu", id);
@@ -2863,19 +2863,19 @@ void StorageUpdaterThreadMain(uint64_t id) {
     MOT::RC res;
     bool commit_res = false;
     uint64_t commit_txn_num = 0;
-    
+
     auto txn_ptr = std::make_unique<proto::Transaction>();
     while(true) {
         storage_update_queue.wait_dequeue(txn_ptr);
         //handle txn read request
         if(txn_ptr != nullptr) {
-            // MOT_LOG_INFO("Storage 收到一个事务");
+//             MOT_LOG_INFO("Storage 收到一个事务");
             txn_manager->CleanTxn();
             vec_key.clear();
             vec_row.clear();
             vec_table.clear();
             lock_map.clear();
-            commit_res = true; 
+            commit_res = true;
             key_id = 0;
             for (auto row_it = txn_ptr->row().begin(); row_it != txn_ptr->row().end(); ++row_it) {
                 MOT::Table* table = MOTAdaptor::m_engine->GetTableManager()->GetTable(row_it->table_name());
@@ -2887,7 +2887,7 @@ void StorageUpdaterThreadMain(uint64_t id) {
                     key->CpKey((uint8_t*)row_it->key().c_str(), key_length);
                     key_str = key->GetKeyStr();
                     // MOT_LOG_INFO("txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
-                    
+
                     res = table->FindRow(key, row ,0);
                     if (res != MOT::RC_OK) { // an error
                         // look up fail!~
@@ -2905,12 +2905,12 @@ void StorageUpdaterThreadMain(uint64_t id) {
                     table = nullptr, row = nullptr;
                     MOT_LOG_INFO("Taas Storage Updater 3010 table is null %s", row_it->table_name().c_str());
                 }
-                
+
                 vec_key.push_back(key);
                 vec_row.push_back(row);
                 vec_table.push_back(table);
             }
-            
+
             // process operation
             key_id = 0;
             for (auto row_it = txn_ptr->row().begin(); row_it != txn_ptr->row().end(); ++row_it) {
@@ -2932,7 +2932,7 @@ void StorageUpdaterThreadMain(uint64_t id) {
                 else if (row_it->op_type() == proto::OpType::Update) {
                     row->CopyData((uint8_t*)row_it->data().c_str(),table->GetTupleSize());
                     // for (auto col_it = row_it->column().begin(); col_it != row_it->column().end(); ++col_it) {
-                    //     row->SetValueVariable(col_it->id(), col_it->value().c_str(), col_it->value().length()); // 
+                    //     row->SetValueVariable(col_it->id(), col_it->value().c_str(), col_it->value().length()); //
                     // }
                     row->SetCSN_Update(txn_ptr->csn());
                     // MOT_LOG_INFO("Storage Update txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
@@ -2955,7 +2955,7 @@ void StorageUpdaterThreadMain(uint64_t id) {
             // txn_manager->SetCommitSequenceNumber(txn_ptr->csn());
             if(txn_manager->TaasLogCommit() != MOT::RC::RC_OK) {
                 // MOT_LOG_INFO("TaasLogCommit Failed");
-                commit_res = false;  
+                commit_res = false;
             } // write change时会写入csn
 
             // release
@@ -2980,7 +2980,7 @@ void StorageUpdaterThreadMain(uint64_t id) {
                     else {
                         // MOT_LOG_INFO("txn ReleaseRow else");
                     }
-                    
+
                 }
             }
             for(auto i : vec_key) {
@@ -2990,7 +2990,7 @@ void StorageUpdaterThreadMain(uint64_t id) {
             vec_row.clear();
             vec_table.clear();
             lock_map.clear();
-
+//            MOT_LOG_INFO("Storage 提交 txn num %llu", commit_txn_num);
             if(commit_res == false) {
 
             }
@@ -3018,7 +3018,7 @@ void StorageReaderThreadMain(uint64_t id) {
 }
 
 void StorageInit() {
-    
+
 }
 
 uint64_t GetSleeptime(){
@@ -3035,7 +3035,7 @@ uint64_t GetSleeptime(){
     else{
         // MOT_LOG_INFO("start time : %llu, current time : %llu, 差值 %llu, sleep time : %llu", start_time_ll, current_time_ll, sleep_time, ksleeptime - sleep_time);
         return kSleepTime - sleep_time;
-    } 
+    }
 }
 
 void StorageManagerThreadMain(uint64_t id) { //handle other status
@@ -3044,7 +3044,7 @@ void StorageManagerThreadMain(uint64_t id) { //handle other status
     storage_init_ok_flag.store(true);
     usleep(1000000);
     storage_start_flag.store(true);
-    auto msg_ptr = std::make_unique<proto::Message>();
+//    auto msg_ptr = std::make_unique<proto::Message>();
 
     zmq::message_t message;
     zmq::context_t context(1);
@@ -3052,12 +3052,13 @@ void StorageManagerThreadMain(uint64_t id) { //handle other status
     request_puller.bind("tcp://*:5546");
     MOT_LOG_INFO("Storage 等待接受同步消息");
     request_puller.recv(&message);
-    uint64_t sleep_time = static_cast<uint64_t>((((start_time.tv_sec / 60) + 1) * 60) * 1000000);
-    usleep(sleep_time - start_time_ll);
-    gettimeofday(&start_time, NULL);
-    start_time_ll = start_time.tv_sec * 1000000 + start_time.tv_usec;
-    usleep(50000);
-    auto epoch_mod = current_epoch.load() % cache_size;
+    while(true) usleep(1000000000);
+//    uint64_t sleep_time = static_cast<uint64_t>((((start_time.tv_sec / 60) + 1) * 60) * 1000000);
+//    usleep(sleep_time - start_time_ll);
+//    gettimeofday(&start_time, NULL);
+//    start_time_ll = start_time.tv_sec * 1000000 + start_time.tv_usec;
+//    usleep(50000);
+//    auto epoch_mod = current_epoch.load() % cache_size;
 //    while(true) {
 //        usleep(GetSleeptime());
 //        current_epoch.fetch_add(1);
@@ -3078,13 +3079,15 @@ void StorageWorker1ThreadMain(uint64_t id) { // Listen SUB
     socket_listen.setsockopt(ZMQ_SUBSCRIBE, "", 0);
     socket_listen.setsockopt(ZMQ_RCVHWM, &queue_length, sizeof(queue_length));
     for(int i = 0; i < kTxnNodeIp.size(); i ++) {
-        socket_listen.connect("tcp://" +kTxnNodeIp[i] + ":5556");
+        socket_listen.connect("tcp://" + kTxnNodeIp[i] + ":5556");
         MOT_LOG_INFO("线程开始工作 ListenThread %s", ("tcp://" + kTxnNodeIp[i] + ":5556").c_str());
     }
 
+    std::unique_ptr<zmq::message_t> message_ptr;
     for(;;) {
-        std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
+        message_ptr = std::make_unique<zmq::message_t>();
         socket_listen.recv(&(*message_ptr));
+//        MOT_LOG_INFO("Listen SUB receive a message");
         if(!storage_listen_message_queue.enqueue(std::move(message_ptr))) assert(false);
         if(!storage_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()))) assert(false);
     }
@@ -3118,8 +3121,9 @@ void StorageListenThreadMain(uint64_t id) {// PULL PUSH
     auto storage_listen_socket = std::make_shared<zmq::socket_t>(*storage_listen_context, ZMQ_PULL);
     storage_listen_socket->bind("tcp://*:5554");
     while(storage_init_ok_flag.load() == false) usleep(200);
+    std::unique_ptr<zmq::message_t> message_ptr;
     while(true) {
-        std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
+        message_ptr = std::make_unique<zmq::message_t>();
         storage_listen_socket->recv(&(*message_ptr));
         storage_listen_message_queue.enqueue(std::move(message_ptr));
         storage_listen_message_queue.enqueue(std::move(std::make_unique<zmq::message_t>()));

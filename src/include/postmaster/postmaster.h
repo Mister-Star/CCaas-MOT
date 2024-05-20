@@ -35,7 +35,7 @@ extern volatile bool is_stable_epoch_send, is_epoch_advanced_by_message, is_read
 //ADDBY TAAS
 extern std::vector<std::string> kTxnNodeIp, kStorageNodeIp;
 extern std::string kLocalIp;
-extern uint64_t kStorageUpdaterThreadNum, kStorageReaderThreadNum, kEpochSize_us, txn_ip_index;
+extern uint64_t kStorageUpdaterThreadNum, kStorageReaderThreadNum, kMessageManagerThreadNum, kEpochSize_us, txn_ip_index;
 
 extern THR_LOCAL bool comm_client_bind;
 

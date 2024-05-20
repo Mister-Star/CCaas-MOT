@@ -266,7 +266,7 @@ volatile bool is_stable_epoch_send = false, is_epoch_advanced_by_message = true,
 //ADDBY TAAS
 std::vector<std::string> kTxnNodeIp, kStorageNodeIp;
 std::string kLocalIp;
-uint64_t kStorageUpdaterThreadNum = 32, kStorageReaderThreadNum = 32, kEpochSize_us = 10000, txn_ip_index = 0 ;
+uint64_t kStorageUpdaterThreadNum = 32, kStorageReaderThreadNum = 32, kMessageManagerThreadNum = 4, kEpochSize_us = 10000, txn_ip_index = 0 ;
 
 void GenerateClientThreads();
 void GenerateStorageThreads();
@@ -11409,11 +11409,11 @@ void GenerateClientThreads(){
     }
 
 
-    g_instance.pid_cxt.ClientWorker1PIDS = (ThreadId*)palloc( 4 * sizeof(ThreadId));
+    g_instance.pid_cxt.ClientWorker1PIDS = (ThreadId*)palloc( kMessageManagerThreadNum * sizeof(ThreadId));
     if (g_instance.pid_cxt.ClientWorker1PIDS == NULL) {
         ereport(FATAL, (errmsg("communicator palloc ClientWorker1PIDS mempry failed")));
     }
-    for (int i = 0 ; i < 4 ; i++){
+    for (int i = 0 ; i < kMessageManagerThreadNum ; i++){
         g_instance.pid_cxt.ClientWorker1PIDS[i] = initialize_util_thread(CLIENT_WORKER1); 
         client_worker1_thread_ids.push_back(g_instance.pid_cxt.ClientWorker1PIDS[i]);
     }
@@ -11444,7 +11444,7 @@ void GenerateStorageThreads(){
         ereport(FATAL, (errmsg("communicator palloc StorageWorker1PIDS mempry failed")));
     }
     for (int i = 0 ; i < 1 ; i++){
-        g_instance.pid_cxt.StorageWorker1PIDS[i] = initialize_util_thread(STOREAGE_WORKER1); 
+        g_instance.pid_cxt.StorageWorker1PIDS[i] = initialize_util_thread(STOREAGE_WORKER1);  ///Listen SUB
         storage_worker1_thread_ids.push_back(g_instance.pid_cxt.StorageWorker1PIDS[i]);
     }
 
@@ -11457,11 +11457,11 @@ void GenerateStorageThreads(){
         storage_manager_thread_ids.push_back(g_instance.pid_cxt.StorageManagerPIDS[i]);
     }
 
-    g_instance.pid_cxt.StorageMessageManagerPIDS = (ThreadId*)palloc( 2 * sizeof(ThreadId));
+    g_instance.pid_cxt.StorageMessageManagerPIDS = (ThreadId*)palloc( kMessageManagerThreadNum * sizeof(ThreadId));
     if (g_instance.pid_cxt.StorageMessageManagerPIDS == NULL) {
         ereport(FATAL, (errmsg("communicator palloc StorageMessageManagerPIDS mempry failed")));
     }
-    for (int i = 0 ; i < 2 ; i++){
+    for (int i = 0 ; i < kMessageManagerThreadNum ; i++){
         g_instance.pid_cxt.StorageMessageManagerPIDS[i] = initialize_util_thread(STOREAGE_MESSAGE_MANAGER); 
         storage_message_manager_thread_ids.push_back(g_instance.pid_cxt.StorageMessageManagerPIDS[i]);
     }
@@ -11513,6 +11513,11 @@ void TaasGetServerInfo(){
     tinyxml2::XMLElement* local_ip = root->FirstChildElement("client_local_ip");
     std::string temp3(local_ip->GetText());
     kLocalIp = temp3;
+
+    tinyxml2::XMLElement* message_num = root->FirstChildElement("pack_thread_num");
+    kMessageManagerThreadNum = std::stoull(message_num->GetText());
+    tinyxml2::XMLElement* worker_num = root->FirstChildElement("worker_thread_num");
+    kStorageUpdaterThreadNum = kStorageReaderThreadNum = std::stoull(worker_num->GetText());
 
     ereport(LOG, (errmsg("========================================================")));
     for(int i = 0; i < (int)kTxnNodeIp.size(); i++ ){
