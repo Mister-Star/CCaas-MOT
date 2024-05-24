@@ -2654,7 +2654,7 @@ void ClientSendThreadMain(uint64_t id) {
             msg = std::make_unique<zmq::message_t>(static_cast<void*>(const_cast<char*>(params->merge_request_ptr->data())),
                     params->merge_request_ptr->size(), string_free, static_cast<void*>(params->merge_request_ptr));
             client_send_sockets[cnt]->send(*(msg));
-            cnt = cnt + 1 % kTxnNodeIp.size();
+            cnt = (cnt + 1) % kTxnNodeIp.size();
             // MOT_LOG_INFO("ClientSendThreadMain 发送一个事务");
         }
     }
