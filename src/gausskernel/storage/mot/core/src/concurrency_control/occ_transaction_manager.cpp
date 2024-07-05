@@ -761,7 +761,7 @@ bool OccTransactionManager::IsReadOnly(TxnManager * txMan){
 }
 
 uint32_t OccTransactionManager::GetRowSetSize(TxnManager * txMan) {
-    return txMan->m_accessMgr.Get()->m_rowCnt;
-    // return m_rowsSetSize;
+//    return txMan->m_accessMgr.Get()->m_rowCnt;
+     return m_rowsSetSize;
 }
 }  // namespace MOT

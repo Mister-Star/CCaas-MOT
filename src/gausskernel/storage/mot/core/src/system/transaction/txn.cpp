@@ -338,8 +338,7 @@ RC TxnManager::ValidateCommit()
     if(m_occManager.GetRowSetSize(this) == 0) { //建表
         return RC_OK;
     }
-    
-    //check read only ? directly return?
+
     auto time1 = now_to_us();
     this->commit_state = RC::RC_WAIT;
     if(!MOTAdaptor::InsertTxntoLocalChangeSet(this)) {

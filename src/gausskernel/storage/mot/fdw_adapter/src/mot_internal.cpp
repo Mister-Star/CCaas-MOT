@@ -2601,9 +2601,10 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
         }
         row->set_key(std::move(std::string(key->GetKeyBuf(), key->GetKeyBuf() + key->GetKeyLength())));
         row->set_table_name(local_row->GetTable()->GetLongTableName());
-        if(op_type == proto::OpType::Update || op_type == proto::OpType::Insert) {
-            row->set_data(local_row->GetData(), local_row->GetTable()->GetTupleSize());
-        }
+//        if(op_type == proto::OpType::Update || op_type == proto::OpType::Insert) {
+//            row->set_data(local_row->GetData(), local_row->GetTable()->GetTupleSize());
+//        }
+        row->set_data(local_row->GetData(), local_row->GetTable()->GetTupleSize());
         row->set_op_type(op_type);
     }
     txn->set_client_ip(kLocalIp);
