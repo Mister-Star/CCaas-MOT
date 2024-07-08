@@ -694,12 +694,8 @@ void OccTransactionManager::updateInsertSetSize(TxnManager * txMan, uint32_t& re
                 m_insertSetSize++;
                 m_writeSetSize++;
                 break;
-            case RD: 
-                if (isolationLevel > READ_COMMITED) {
-                    readSetSize++;
-                } else {
-                    continue;
-                }
+            case RD:
+                readSetSize++;
                 break;
             default:
                 break;

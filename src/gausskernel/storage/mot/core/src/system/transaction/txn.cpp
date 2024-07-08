@@ -335,9 +335,12 @@ RC TxnManager::ValidateCommit()
     uint32_t readSetSize = 0; 
     m_occManager.updateInsertSetSize(this, readSetSize);
 
-    if(m_occManager.GetRowSetSize(this) == 0) { //建表
+    if(readSetSize == 0) {
         return RC_OK;
     }
+//    if(m_occManager.GetRowSetSize(this) == 0) { //建表
+//        return RC_OK;
+//    }
 
     auto time1 = now_to_us();
     this->commit_state = RC::RC_WAIT;
