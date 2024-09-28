@@ -2604,7 +2604,12 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
 //        if(op_type == proto::OpType::Update || op_type == proto::OpType::Insert) {
 //            row->set_data(local_row->GetData(), local_row->GetTable()->GetTupleSize());
 //        }
-        row->set_data(local_row->GetData(), local_row->GetTable()->GetTupleSize());
+        if (access->m_type == MOT::RD) {
+            row->set_data(local_row->GetCommitSequenceNumber(), sizeof(uint64_t));
+        }
+        else {
+            row->set_data(local_row->GetData(), local_row->GetTable()->GetTupleSize());
+        }
         row->set_op_type(op_type);
     }
     txn->set_client_ip(kLocalIp);
@@ -2628,6 +2633,7 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
 
         google::protobuf::io::StringOutputStream outputStream(serialized_txn_str_ptr);
         auto res = msg->SerializeToZeroCopyStream(&outputStream);
+        MOT_LOG_INFO("send a message to CCaaS, size = %lu", serialized_txn_str_ptr.size());
 
         client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, serialized_txn_str_ptr)));
         client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, nullptr)));
