@@ -2929,6 +2929,8 @@ void StorageUpdaterThreadMain(uint64_t id) {
             commit_res = true;
             key_id = 0;
 
+
+            txn_manager->SetCommitSequenceNumber(txn_ptr->csn());
             for (int i = 0; i < txn_ptr->row_size(); i++) {
                 auto *row_it = &(txn_ptr->row(i));
                 MOT::Table* table = MOTAdaptor::m_engine->GetTableManager()->GetTable(row_it->table_name());
