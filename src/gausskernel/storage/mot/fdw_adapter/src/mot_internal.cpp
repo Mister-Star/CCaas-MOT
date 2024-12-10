@@ -90,6 +90,8 @@
 #include "utils/timestamp.h"
 #include "postmaster/postmaster.h"
 
+#include <lz4.h>
+
 /** @define masks for CSN word   */
 #define CSN_BITS 0x1FFFFFFFFFFFFFFFUL
 
@@ -2571,6 +2573,7 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
     MOT::BitmapSet* bmp;
     MOT::TxnOrderedSet_t &orderedSet = txMan->m_accessMgr->GetOrderedRowSet();
     int num = 0;
+    int read_op_num = 0, write_op_num = 0;
     for (const auto &raPair : orderedSet){
         num ++;
         access = raPair.second;
@@ -2578,18 +2581,22 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
         if (access->m_type == MOT::RD) {
             op_type = proto::OpType::Read;
             local_row = access->m_localRow;
+            read_op_num += 1;
         }
         if (access->m_type == MOT::WR){
             op_type = proto::OpType::Update;
             local_row = access->m_localRow;
+            write_op_num += 1;
         }
         else if (access->m_type == MOT::INS){
             op_type = proto::OpType::Insert;
             local_row = access->m_localInsertRow;
+            write_op_num += 1;
         }
         else if (access->m_type == MOT::DEL){
             op_type = proto::OpType::Delete;
             local_row = access->m_localRow;
+            write_op_num += 1;
         }
 
         if(local_row == nullptr || local_row->GetTable() == nullptr){
@@ -2605,10 +2612,23 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
 //            row->set_data(local_row->GetData(), local_row->GetTable()->GetTupleSize());
 //        }
         if (access->m_type == MOT::RD) {
-            row->set_data(local_row->GetCommitSequenceNumber(), sizeof(uint64_t));
+            auto csn_s = std::to_string(local_row->GetCommitSequenceNumber());
+            row->set_data(csn_s.c_str(), csn_s.size());
         }
         else {
-            row->set_data(local_row->GetData(), local_row->GetTable()->GetTupleSize());
+            std::string str = std::string(reinterpret_cast<const char*>(local_row->GetData()), local_row->GetTable()->GetTupleSize());
+            int maxCompressedSize = LZ4_compressBound(str.size());
+            std::string compressed(maxCompressedSize + sizeof(int), '\0');
+            // 压缩数据
+            int compressedSize = LZ4_compress_default(str.data(), &compressed[sizeof(int)], str.size(), maxCompressedSize);
+            if (compressedSize <= 0) {
+                throw std::runtime_error("Compression failed");
+            }
+            // 存储原始大小
+            *reinterpret_cast<int*>(&compressed[0]) = str.size();
+            // 调整大小以匹配实际压缩后的大小
+            compressed.resize(compressedSize + sizeof(int));
+            row->set_data(compressed.c_str(), compressed.size());
         }
         row->set_op_type(op_type);
     }
@@ -2633,7 +2653,7 @@ bool MOTAdaptor::InsertTxntoLocalChangeSet(MOT::TxnManager* txMan){
 
         google::protobuf::io::StringOutputStream outputStream(serialized_txn_str_ptr);
         auto res = msg->SerializeToZeroCopyStream(&outputStream);
-        MOT_LOG_INFO("send a message to CCaaS, size = %lu", serialized_txn_str_ptr.size());
+        MOT_LOG_INFO("send a message to CCaaS, size = %lu, read op num = %ld, write op num = %ld", serialized_txn_str_ptr->size(), read_op_num, write_op_num);
 
         client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, serialized_txn_str_ptr)));
         client_send_message_queue.enqueue(std::move(std::make_unique<send_thread_params>(0, 0, nullptr)));
@@ -3010,7 +3030,16 @@ void StorageUpdaterThreadMain(uint64_t id) {
                         row->SetCSN_Delete(txn_ptr->csn());
                         // MOT_LOG_INFO("Storage Delete txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
                     } else if (row_it->op_type() == proto::OpType::Update) {
-                        row->CopyData((uint8_t*)row_it->data().c_str(), table->GetTupleSize());
+                        std::string compressed = row_it->data();
+                        int originalSize = *reinterpret_cast<const int*>(compressed.data());
+                        // 解压缩
+                        std::string decompressed(originalSize, '\0');
+                        int decompressedSize = LZ4_decompress_safe(&compressed[sizeof(int)], &decompressed[0],
+                            compressed.size() - sizeof(int), originalSize);
+                        if (decompressedSize < 0) {
+                            throw std::runtime_error("Decompression failed");
+                        }
+                        row->CopyData((uint8_t*)decompressed.c_str(), table->GetTupleSize());
                         // for (auto col_it = row_it->column().begin(); col_it != row_it->column().end(); ++col_it) {
                         //     row->SetValueVariable(col_it->id(), col_it->value().c_str(), col_it->value().length()); //
                         // }
@@ -3018,7 +3047,17 @@ void StorageUpdaterThreadMain(uint64_t id) {
                         // MOT_LOG_INFO("Storage Update txn %llu key_id %llu op_type %llu", txn_ptr->client_txn_id(), key_id++, row_it->op_type());
                     } else if (row_it->op_type() == proto::OpType::Insert) {  /// never should be happen
                         row = table->CreateNewRow();
-                        row->CopyData((uint8_t*)row_it->data().c_str(), table->GetTupleSize());
+                        std::string compressed = row_it->data();
+                        int originalSize = *reinterpret_cast<const int*>(compressed.data());
+                        // 解压缩
+                        std::string decompressed(originalSize, '\0');
+                        int decompressedSize = LZ4_decompress_safe(&compressed[sizeof(int)], &decompressed[0],
+                            compressed.size() - sizeof(int), originalSize);
+                        if (decompressedSize < 0) {
+                            throw std::runtime_error("Decompression failed");
+                        }
+                        row->CopyData((uint8_t*)decompressed.c_str(), table->GetTupleSize());
+//                        row->CopyData((uint8_t*)row_it->data().c_str(), table->GetTupleSize());
                         res = table->InsertRow(row, txn_manager);
                         if ((res != MOT::RC_OK) && (res != MOT::RC_UNIQUE_VIOLATION)) {
                             MOT_REPORT_ERROR(MOT_ERROR_OOM,
