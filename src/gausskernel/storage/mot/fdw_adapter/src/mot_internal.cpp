@@ -94,6 +94,8 @@
 
 #include <lz4.h>
 
+int TaaS_Start();
+
 /** @define masks for CSN word   */
 #define CSN_BITS 0x1FFFFFFFFFFFFFFFUL
 
@@ -367,6 +369,7 @@ void MOTAdaptor::Init()
     }
     InitDataNodeId();
     InitKeyOperStateMachine();
+    TaaS_Start();
     m_initialized = true;
 }
 
@@ -7996,6 +7999,325 @@ void ShardEpochManager::EpochLogicalTimerManagerThreadMain() {
 }
 
 
+
+///Worker
+
+void WorkerFroMOTStorageThreadMain(uint64_t id) {
+    std::string name = "EpochMOT";
+    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    while(!EpochManager::IsInitOK()) usleep(sleep_time);
+    MOT mot;
+    mot.Init();
+    while (!EpochManager::IsTimerStop()) {
+        mot.SendTransactionToDB_Usleep();
+    }
+}
+
+void WorkerForStorageSendMOTThreadMain() {
+    std::string name = "EpochMOTStorage";
+    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    SendToMOTStorageThreadMain();
+}
+
+void WorkerFroMessageThreadMain(uint64_t id) {/// handle client txn
+    std::string name = "TxnMessage-" + std::to_string(id);
+    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    EpochMessageReceiveHandler receiveHandler;
+    class TwoPC twoPC;
+    while(init_ok_num.load() < 5) usleep(sleep_time);
+    receiveHandler.Init(id);
+    Taas::TwoPC::Init(id);
+    init_ok_num.fetch_add(1);
+    //        bool sleep_flag;
+    //        auto safe_length = TaasContext::kCacheMaxLength / 10;
+    while(!EpochManager::IsInitOK()) usleep(sleep_time);
+    while(!EpochManager::IsTimerStop()){
+        switch(TaasContext::taasMode) {
+            case TaasMode::MultiModel :
+            case TaasMode::MultiMaster :
+            case TaasMode::Shard : {
+                while(!EpochManager::IsTimerStop()) {
+                    //                        sleep_flag = true;
+                    //                        receiveHandler.TryHandleReceivedControlMessage();
+                    //                        if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) /// avoid task backlogs, stop handling txn comes from the client
+                    //                            receiveHandler.TryHandleReceivedMessage();
+                    //
+                    //                        sleep_flag = sleep_flag & receiveHandler.sleep_flag;
+                    //
+                    //                        if(sleep_flag) usleep(merge_sleep_time);
+                    while(!EpochManager::IsTimerStop())
+                        receiveHandler.HandleReceivedMessage();
+                }
+                break;
+            }
+            case TaasMode::TwoPC : {
+                while(!EpochManager::IsTimerStop()) {
+                    twoPC.HandleClientMessage();        // test
+                                                  //                        twoPC.HandleReceivedMessage();
+
+                }
+                break;
+            }
+        }
+    }
+}
+
+void WorkerFroMessageEpochThreadMain(uint64_t id) {/// handle message
+    std::string name = "EpochMessage-" + std::to_string(id);
+    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    EpochMessageReceiveHandler receiveHandler;
+    class TwoPC twoPC;
+    while(init_ok_num.load() < 5) usleep(sleep_time);
+    receiveHandler.Init(id);
+    Taas::TwoPC::Init(id);
+    init_ok_num.fetch_add(1);
+    while(!EpochManager::IsInitOK()) usleep(sleep_time);
+    while(!EpochManager::IsTimerStop()){
+        switch(TaasContext::taasMode) {
+            case TaasMode::MultiModel :
+            case TaasMode::MultiMaster :
+            case TaasMode::Shard : {
+                while(!EpochManager::IsTimerStop()) {
+                    receiveHandler.HandleReceivedControlMessage();
+                }
+                break;
+            }
+            case TaasMode::TwoPC : {
+                while(!EpochManager::IsTimerStop()) {
+                    twoPC.HandleReceivedMessage();      // test
+                }
+                break;
+            }
+        }
+    }
+}
+
+void WorkerForClientListenThreadMain() {
+    std::string name = "EpochClientListen";
+    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    SetCPU();
+    ListenClientThreadMain();
+}
+
+void WorkerForClientSendThreadMain() {
+    std::string name = "EpochClientSend";
+    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    SetCPU();
+    SendClientThreadMain();
+}
+
+void WorkerForServerListenThreadMain() {
+    std::string name = "EpochServerListen";
+    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    SetCPU();
+    ListenServerThreadMain();
+}
+
+void WorkerForServerListenThreadMain_Epoch() {
+    std::string name = "EpochServerListen";
+    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    SetCPU();
+    ListenServerThreadMain_Sub();
+}
+
+void WorkerForServerSendThreadMain() {
+    std::string name = "EpochServerSend";
+    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    SetCPU();
+    SendServerThreadMain();
+}
+
+void WorkerForServerSendPUBThreadMain() {
+    std::string name = "EpochClientSend";
+    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    SetCPU();
+    SendServerPUBThreadMain();
+}
+
+void EpochWorkerThreadMain(uint64_t id) {
+    std::string name = "TaaSMerger-" + std::to_string(id);
+    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    Merger merger;
+    EpochMessageReceiveHandler receiveHandler;
+    class TwoPC two_pc;
+    while(init_ok_num.load() < 5) usleep(sleep_time);
+    //        LOG(INFO) << "start worker init" << id;
+    merger.MergeInit(id);
+    receiveHandler.Init(id);
+    Taas::TwoPC::Init(id);
+    bool sleep_flag;
+    init_ok_num.fetch_add(1);
+    //        LOG(INFO) << "finish worker init" << id;
+    while(!EpochManager::IsInitOK()) usleep(sleep_time);
+    SetCPU();
+    switch(TaasContext::taasMode) {
+        case TaasMode::MultiModel :
+        case TaasMode::MultiMaster :
+        case TaasMode::Shard : {
+            while(!EpochManager::IsTimerStop()) {
+                sleep_flag = true;
+
+                merger.epoch = EpochManager::GetLogicalEpoch();
+                merger.epoch_mod = merger.epoch % TaasContext::kCacheMaxLength;
+                while (TransactionCache::epoch_read_validate_queue[merger.epoch_mod]->try_dequeue(
+                    merger.txn_ptr)) {
+                    if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
+                        merger.ReadValidate();
+                        merger.txn_ptr.reset();
+                        sleep_flag = false;
+                    }
+                }
+
+                while (!EpochManager::IsEpochMergeComplete(merger.epoch) && TransactionCache::epoch_merge_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
+                    if (merger.txn_ptr != nullptr &&
+                        merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
+                        merger.Merge();
+                        merger.txn_ptr.reset();
+                        sleep_flag = false;
+                    }
+                }
+
+                while (EpochManager::IsAbortSetMergeComplete(merger.epoch) &&
+                       !EpochManager::IsCommitComplete(merger.epoch) &&
+                       TransactionCache::epoch_commit_queue[merger.epoch_mod]->try_dequeue(
+                           merger.txn_ptr)) {
+                    if (merger.txn_ptr != nullptr &&
+                        merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
+                        merger.Commit();
+                        merger.txn_ptr.reset();
+                        sleep_flag = false;
+                    }
+                }
+
+                while (EpochManager::IsAbortSetMergeComplete(merger.epoch) &&
+                       !EpochManager::IsRecordCommitted(merger.epoch) &&
+                       TransactionCache::epoch_redo_log_queue[merger.epoch_mod]->try_dequeue(
+                           merger.txn_ptr)) {
+                    if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() !=
+                                                         proto::TxnType::NullMark) { /// only local txn do redo log
+                        merger.RedoLog();
+                        merger.txn_ptr.reset();
+                        sleep_flag = false;
+                    }
+                }
+
+                while (EpochManager::IsRecordCommitted(merger.epoch) &&
+                       !EpochManager::IsResultReturned(merger.epoch) &&
+                       TransactionCache::epoch_result_return_queue[merger.epoch_mod]->try_dequeue(
+                           merger.txn_ptr)) {
+                    if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() !=
+                                                         proto::TxnType::NullMark) { /// only local txn do redo log
+                        merger.ResultReturn();
+                        merger.txn_ptr.reset();
+                        sleep_flag = false;
+                    }
+                }
+
+                if (sleep_flag) usleep(merge_sleep_time);
+            }
+            break;
+        }
+        case TaasMode::TwoPC : {
+            two_pc.HandleClientMessage();
+            break;
+        }
+    }
+}
+
+
+void WorkerForPhysicalThreadMain() {
+    std::string name = "EpochPhysical";
+    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    SetCPU();
+    EpochPhysicalTimerManagerThreadMain();
+}
+
+void WorkerForLogicalThreadMain() {
+    std::string name = "EpochLogical";
+    pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    SetCPU();
+    ShardEpochManager::EpochLogicalTimerManagerThreadMain();
+}
+
+void WorkerForEpochControlMessageThreadMain() {
+    SetCPU();
+    while(!EpochManager::IsInitOK() || EpochManager::GetPhysicalEpoch() < 10) usleep(sleep_time);
+    while(!EpochManager::IsTimerStop()){
+        switch(TaasContext::taasMode) {
+            case TaasMode::MultiModel :
+            case TaasMode::MultiMaster :
+            case TaasMode::Shard : {
+                uint64_t local_server_id = TaasContext::txn_node_ip_index;
+                uint64_t shard_epoch = 1, remote_server_epoch = 1, abort_send_epoch = 1, server_num = TaasContext::kTxnNodeNum;
+                bool sleep_flag;
+                while(!EpochManager::IsInitOK()) usleep(sleep_time);
+                while(!EpochManager::IsTimerStop()) {
+                    sleep_flag = true;
+                    //                        while(shard_epoch >= EpochManager::GetPhysicalEpoch()) {
+                    //                            usleep(100);
+                    //                        }
+                    if (shard_epoch < EpochManager::GetPhysicalEpoch() && EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(shard_epoch)) {
+                        EpochMessageSendHandler::SendEpochShardEndMessage(local_server_id, shard_epoch, server_num);
+                        //                            LOG(INFO) << "Send EpochShardEndFlag epoch " << shard_epoch;
+                        shard_epoch ++;
+                        sleep_flag = false;
+                    }
+
+                    if(remote_server_epoch < shard_epoch &&
+                        EpochMessageReceiveHandler::CheckEpochShardReceiveComplete(remote_server_epoch) &&
+                        EpochMessageReceiveHandler::CheckEpochShardTxnHandleComplete(remote_server_epoch)) {
+                        EpochMessageSendHandler::SendEpochRemoteServerEndMessage(local_server_id, remote_server_epoch, server_num);
+                        //                            LOG(INFO) << "Send SendEpochRemoteServerEndMessage epoch " << remote_server_epoch;
+                        remote_server_epoch ++;
+                        sleep_flag = false;
+                    }
+
+                    if(abort_send_epoch < remote_server_epoch && EpochManager::IsEpochMergeComplete(abort_send_epoch)) {
+                        EpochMessageSendHandler::SendAbortSet(local_server_id, abort_send_epoch);
+                        //                            LOG(INFO) << "Send SendAbortSet epoch " << abort_send_epoch;
+                        abort_send_epoch ++;
+                        sleep_flag = false;
+                    }
+
+                    //
+                    //                        if(EpochManager::IsEpochMergeComplete(abort_send_epoch)) {
+                    //                            EpochMessageSendHandler::SendAbortSet(local_server_id, abort_send_epoch, TaasContext::kCacheMaxLength);
+                    //                            abort_send_epoch ++;
+                    //                            sleep_flag = false;
+                    //                        }
+                    //                        if(sleep_flag) usleep(100);
+                    if(sleep_flag) std::this_thread::yield();
+                }
+                break;
+            }
+            case TaasMode::TwoPC : {
+                //
+                break;
+            }
+        }
+    }
+}
+
+void WorkerForLogicalRedoLogPushDownCheckThreadMain() {
+    SetCPU();
+    while(!EpochManager::IsInitOK()) usleep(sleep_time);
+    while(!EpochManager::IsTimerStop()){
+        switch(TaasContext::taasMode) {
+            case TaasMode::MultiModel :
+            case TaasMode::MultiMaster :
+            case TaasMode::Shard : {
+                CheckRedoLogPushDownState();
+                break;
+            }
+            case TaasMode::TwoPC : {
+                //                    TwoPhaseCommitManager::TwoPhaseCommitManagerThreadMain(ctx);
+            }
+        }
+        //            CheckRedoLogPushDownState(ctx);
+    }
+}
+
+
 int TaaSmain() {
     auto res = TaasContext::Print();
     printf("%s\n", res.c_str());
@@ -8084,6 +8406,8 @@ int TaaSmain() {
             }
         }
     }
+
+    MOT_LOG_INFO("Start TaaS");
 
     if(TaasContext::kDurationTime_us != 0) {
         while(!test_start.load()) usleep(sleep_time);
