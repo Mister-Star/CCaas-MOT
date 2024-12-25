@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package proto;
+
 import "transaction.proto";
 import "server.proto";
 import "client.proto";
