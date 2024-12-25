@@ -2308,7 +2308,7 @@ void SetCPU(){
     CPU_SET(cpu_index.fetch_add(1), &logicalEpochSet); //2就是核心号
     int rc = sched_setaffinity(0, sizeof(cpu_set_t), &logicalEpochSet);
     if (rc == -1) {
-        ereport(FATAL, (errmsg("绑核失败")));
+//        ereport(FATAL, (errmsg("绑核失败")));
     }
 }
 
@@ -7992,6 +7992,7 @@ void ShardEpochManager::EpochLogicalTimerManagerThreadMain() {
 //                      << " Total Time Cost **** " << time8 - time1
 //                      << " ****end\n";
             OUTPUTLOG("===== Logical Start Epoch的合并 ===== ", epoch);
+            MOT_LOG_INFO("TaaS Logical Start Epoch的合并 Physical %lu, Logical %lu, Log %lu", EpochManager::GetPhysicalEpoch(), epoch, EpochManager::GetPushDownEpoch());
         }
         epoch ++;
         last_total_commit_txn_num = EpochMessageSendHandler::TotalTxnNum.load();
@@ -8005,6 +8006,7 @@ void ShardEpochManager::EpochLogicalTimerManagerThreadMain() {
 void WorkerFroMOTStorageThreadMain(uint64_t id) {
     std::string name = "EpochMOT";
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    MOT_LOG_INFO("TaaS Thread" + name);
     while(!EpochManager::IsInitOK()) usleep(sleep_time);
     MOT mot;
     mot.Init();
@@ -8016,6 +8018,7 @@ void WorkerFroMOTStorageThreadMain(uint64_t id) {
 void WorkerForStorageSendMOTThreadMain() {
     std::string name = "EpochMOTStorage";
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    MOT_LOG_INFO("TaaS Thread" + name);
     SendToMOTStorageThreadMain();
 }
 
@@ -8023,6 +8026,7 @@ void WorkerFroMessageThreadMain(uint64_t id) {/// handle client txn
     std::string name = "TxnMessage-" + std::to_string(id);
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
     EpochMessageReceiveHandler receiveHandler;
+    MOT_LOG_INFO("TaaS Thread" + name);
     class TwoPC twoPC;
     while(init_ok_num.load() < 5) usleep(sleep_time);
     receiveHandler.Init(id);
@@ -8065,6 +8069,7 @@ void WorkerFroMessageThreadMain(uint64_t id) {/// handle client txn
 void WorkerFroMessageEpochThreadMain(uint64_t id) {/// handle message
     std::string name = "EpochMessage-" + std::to_string(id);
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    MOT_LOG_INFO("TaaS Thread" + name);
     EpochMessageReceiveHandler receiveHandler;
     class TwoPC twoPC;
     while(init_ok_num.load() < 5) usleep(sleep_time);
@@ -8095,6 +8100,7 @@ void WorkerFroMessageEpochThreadMain(uint64_t id) {/// handle message
 void WorkerForClientListenThreadMain() {
     std::string name = "EpochClientListen";
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    MOT_LOG_INFO("TaaS Thread" + name);
     SetCPU();
     ListenClientThreadMain();
 }
@@ -8102,6 +8108,7 @@ void WorkerForClientListenThreadMain() {
 void WorkerForClientSendThreadMain() {
     std::string name = "EpochClientSend";
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    MOT_LOG_INFO("TaaS Thread" + name);
     SetCPU();
     SendClientThreadMain();
 }
@@ -8109,6 +8116,7 @@ void WorkerForClientSendThreadMain() {
 void WorkerForServerListenThreadMain() {
     std::string name = "EpochServerListen";
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    MOT_LOG_INFO("TaaS Thread" + name);
     SetCPU();
     ListenServerThreadMain();
 }
@@ -8116,6 +8124,7 @@ void WorkerForServerListenThreadMain() {
 void WorkerForServerListenThreadMain_Epoch() {
     std::string name = "EpochServerListen";
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    MOT_LOG_INFO("TaaS Thread" + name);
     SetCPU();
     ListenServerThreadMain_Sub();
 }
@@ -8123,6 +8132,7 @@ void WorkerForServerListenThreadMain_Epoch() {
 void WorkerForServerSendThreadMain() {
     std::string name = "EpochServerSend";
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    MOT_LOG_INFO("TaaS Thread" + name);
     SetCPU();
     SendServerThreadMain();
 }
@@ -8130,6 +8140,7 @@ void WorkerForServerSendThreadMain() {
 void WorkerForServerSendPUBThreadMain() {
     std::string name = "EpochClientSend";
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    MOT_LOG_INFO("TaaS Thread" + name);
     SetCPU();
     SendServerPUBThreadMain();
 }
@@ -8137,6 +8148,7 @@ void WorkerForServerSendPUBThreadMain() {
 void EpochWorkerThreadMain(uint64_t id) {
     std::string name = "TaaSMerger-" + std::to_string(id);
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+    MOT_LOG_INFO("TaaS Thread" + name);
     Merger merger;
     EpochMessageReceiveHandler receiveHandler;
     class TwoPC two_pc;
@@ -8229,6 +8241,7 @@ void WorkerForPhysicalThreadMain() {
     std::string name = "EpochPhysical";
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
     SetCPU();
+    MOT_LOG_INFO("TaaS Thread" + name);
     EpochPhysicalTimerManagerThreadMain();
 }
 
@@ -8236,11 +8249,13 @@ void WorkerForLogicalThreadMain() {
     std::string name = "EpochLogical";
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
     SetCPU();
+    MOT_LOG_INFO("TaaS Thread" + name);
     ShardEpochManager::EpochLogicalTimerManagerThreadMain();
 }
 
 void WorkerForEpochControlMessageThreadMain() {
     SetCPU();
+    MOT_LOG_INFO("WorkerForEpochControlMessageThreadMain TaaS");
     while(!EpochManager::IsInitOK() || EpochManager::GetPhysicalEpoch() < 10) usleep(sleep_time);
     while(!EpochManager::IsTimerStop()){
         switch(TaasContext::taasMode) {
@@ -8300,6 +8315,7 @@ void WorkerForEpochControlMessageThreadMain() {
 
 void WorkerForLogicalRedoLogPushDownCheckThreadMain() {
     SetCPU();
+    MOT_LOG_INFO("TaaS Thread" + name);
     while(!EpochManager::IsInitOK()) usleep(sleep_time);
     while(!EpochManager::IsTimerStop()){
         switch(TaasContext::taasMode) {
